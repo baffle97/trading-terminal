@@ -64,21 +64,29 @@ export async function getQuote(tradingSymbol: string): Promise<Quote> {
 export async function getBatchLTP(
   symbols: string[]
 ): Promise<Record<string, number>> {
-  const exchangeSymbols = symbols.map((s) => `NSE_${s}`).join(",");
-  const params = new URLSearchParams({
-    segment: "CASH",
-    exchange_symbols: exchangeSymbols,
-  });
+  if (symbols.length === 0) return {};
 
-  const payload = await growwFetch<Record<string, number>>(
-    `/v1/live-data/ltp?${params}`
-  );
-
+  const BATCH_SIZE = 50;
   const result: Record<string, number> = {};
-  for (const [key, value] of Object.entries(payload)) {
-    const symbol = key.replace(/^(NSE|BSE)_/, "");
-    result[symbol] = value;
+
+  for (let i = 0; i < symbols.length; i += BATCH_SIZE) {
+    const batch = symbols.slice(i, i + BATCH_SIZE);
+    const exchangeSymbols = batch.map((s) => `NSE_${s}`).join(",");
+    const params = new URLSearchParams({
+      segment: "CASH",
+      exchange_symbols: exchangeSymbols,
+    });
+
+    const payload = await growwFetch<Record<string, number>>(
+      `/v1/live-data/ltp?${params}`
+    );
+
+    for (const [key, value] of Object.entries(payload)) {
+      const symbol = key.replace(/^(NSE|BSE)_/, "");
+      result[symbol] = value;
+    }
   }
+
   return result;
 }
 
