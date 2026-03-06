@@ -3,7 +3,10 @@ import { router, protectedProcedure } from "../init";
 import {
   getQuote,
   getBatchLTP,
+  getBatchOHLC,
   getHistoricalCandles,
+  getOptionChain,
+  getGreeks,
 } from "~/server/groww/market-data";
 import {
   searchInstruments,
@@ -18,9 +21,15 @@ export const marketRouter = router({
     }),
 
   batchLtp: protectedProcedure
-    .input(z.object({ symbols: z.array(z.string()).max(50) }))
+    .input(z.object({ symbols: z.array(z.string()) }))
     .query(async ({ input }) => {
       return getBatchLTP(input.symbols);
+    }),
+
+  batchOhlc: protectedProcedure
+    .input(z.object({ symbols: z.array(z.string()) }))
+    .query(async ({ input }) => {
+      return getBatchOHLC(input.symbols);
     }),
 
   historicalCandles: protectedProcedure
@@ -34,10 +43,39 @@ export const marketRouter = router({
       return getHistoricalCandles(input.tradingSymbol, input.timeframe);
     }),
 
+  optionChain: protectedProcedure
+    .input(
+      z.object({
+        exchange: z.string().default("NSE"),
+        underlying: z.string(),
+        expiryDate: z.string(),
+      })
+    )
+    .query(async ({ input }) => {
+      return getOptionChain(input.exchange, input.underlying, input.expiryDate);
+    }),
+
+  greeks: protectedProcedure
+    .input(
+      z.object({
+        exchange: z.string().default("NSE"),
+        underlying: z.string(),
+        tradingSymbol: z.string(),
+        expiry: z.string(),
+      })
+    )
+    .query(async ({ input }) => {
+      return getGreeks(
+        input.exchange,
+        input.underlying,
+        input.tradingSymbol,
+        input.expiry
+      );
+    }),
+
   search: protectedProcedure
     .input(z.object({ query: z.string().min(1) }))
     .query(async ({ input }) => {
-      // Try DB first, fall back to mock instruments
       const results = await searchInstruments(input.query);
       if (results.length > 0) return results;
       return getMockInstruments(input.query);

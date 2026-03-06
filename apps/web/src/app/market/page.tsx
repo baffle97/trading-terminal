@@ -4,17 +4,27 @@ import { trpc } from "~/lib/trpc";
 import { StockCard } from "~/components/stock/stock-card";
 import { NIFTY_50 } from "~/lib/constants";
 
+const POLL_INTERVAL = 5000;
+
 export default function MarketPage() {
-  const { data: prices, isLoading } = trpc.market.batchLtp.useQuery({
-    symbols: [...NIFTY_50],
-  });
+  const symbols = [...NIFTY_50];
+
+  const { data: prices, isLoading } = trpc.market.batchLtp.useQuery(
+    { symbols },
+    { refetchInterval: POLL_INTERVAL }
+  );
+
+  const { data: ohlcData } = trpc.market.batchOhlc.useQuery(
+    { symbols },
+    { refetchInterval: POLL_INTERVAL }
+  );
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Market</h1>
         <p className="text-sm text-text-secondary">
-          Nifty 50 stocks - live prices
+          Nifty 50 stocks — live prices
         </p>
       </div>
 
@@ -34,14 +44,17 @@ export default function MarketPage() {
           {Object.entries(prices)
             .sort(([, a], [, b]) => b - a)
             .map(([symbol, ltp]) => {
-              const change = ltp * (Math.random() - 0.45) * 0.02;
+              const prevClose = ohlcData?.[symbol]?.close ?? ltp;
+              const change = ltp - prevClose;
+              const changePercent =
+                prevClose > 0 ? (change / prevClose) * 100 : 0;
               return (
                 <StockCard
                   key={symbol}
                   tradingSymbol={symbol}
                   ltp={ltp}
                   change={change}
-                  changePercent={(change / ltp) * 100}
+                  changePercent={changePercent}
                 />
               );
             })}

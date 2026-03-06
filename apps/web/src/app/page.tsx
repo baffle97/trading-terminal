@@ -6,12 +6,22 @@ import { PnlSummary } from "~/components/portfolio/pnl-summary";
 import { NIFTY_50 } from "~/lib/constants";
 import { formatCurrency } from "~/lib/utils";
 
+const TOP_STOCKS = [...NIFTY_50].slice(0, 10);
+const POLL_INTERVAL = 5000;
+
 export default function DashboardPage() {
-  const { data: portfolio } = trpc.portfolio.summary.useQuery();
-  const { data: margin } = trpc.portfolio.margin.useQuery();
-  const { data: prices } = trpc.market.batchLtp.useQuery({
-    symbols: [...NIFTY_50].slice(0, 10),
+  const { data: portfolio } = trpc.portfolio.summary.useQuery(undefined, {
+    refetchInterval: POLL_INTERVAL,
   });
+  const { data: margin } = trpc.portfolio.margin.useQuery();
+  const { data: prices } = trpc.market.batchLtp.useQuery(
+    { symbols: TOP_STOCKS },
+    { refetchInterval: POLL_INTERVAL }
+  );
+  const { data: ohlcData } = trpc.market.batchOhlc.useQuery(
+    { symbols: TOP_STOCKS },
+    { refetchInterval: POLL_INTERVAL }
+  );
 
   return (
     <div className="space-y-6">
@@ -50,15 +60,21 @@ export default function DashboardPage() {
         <h2 className="mb-3 text-lg font-semibold">Top Stocks</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {prices &&
-            Object.entries(prices).map(([symbol, ltp]) => (
-              <StockCard
-                key={symbol}
-                tradingSymbol={symbol}
-                ltp={ltp}
-                change={ltp * (Math.random() - 0.45) * 0.02}
-                changePercent={(Math.random() - 0.45) * 2}
-              />
-            ))}
+            Object.entries(prices).map(([symbol, ltp]) => {
+              const prevClose = ohlcData?.[symbol]?.close ?? ltp;
+              const change = ltp - prevClose;
+              const changePercent =
+                prevClose > 0 ? (change / prevClose) * 100 : 0;
+              return (
+                <StockCard
+                  key={symbol}
+                  tradingSymbol={symbol}
+                  ltp={ltp}
+                  change={change}
+                  changePercent={changePercent}
+                />
+              );
+            })}
         </div>
       </div>
     </div>

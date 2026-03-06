@@ -4,8 +4,11 @@ import { use, useState } from "react";
 import { trpc } from "~/lib/trpc";
 import { CandlestickChart } from "~/components/charts/candlestick-chart";
 import { OrderForm } from "~/components/order/order-form";
+import { MarketDepthTable } from "~/components/stock/market-depth";
 import { formatCurrency, formatPercent } from "~/lib/utils";
 import { CHART_TIMEFRAMES } from "~/lib/constants";
+
+const POLL_INTERVAL = 3000;
 
 export default function StockDetailPage({
   params,
@@ -15,9 +18,10 @@ export default function StockDetailPage({
   const { symbol } = use(params);
   const [timeframe, setTimeframe] = useState("1d");
 
-  const { data: quote } = trpc.market.quote.useQuery({
-    tradingSymbol: symbol,
-  });
+  const { data: quote } = trpc.market.quote.useQuery(
+    { tradingSymbol: symbol },
+    { refetchInterval: POLL_INTERVAL }
+  );
 
   const { data: candles } = trpc.market.historicalCandles.useQuery({
     tradingSymbol: symbol,
@@ -84,7 +88,23 @@ export default function StockDetailPage({
               label="Volume"
               value={quote.volume.toLocaleString("en-IN")}
             />
+            <InfoItem
+              label="Avg Price"
+              value={formatCurrency(quote.averagePrice)}
+            />
+            <InfoItem
+              label="Upper Circuit"
+              value={formatCurrency(quote.upperCircuit)}
+            />
+            <InfoItem
+              label="Lower Circuit"
+              value={formatCurrency(quote.lowerCircuit)}
+            />
           </div>
+
+          {(quote.depth.buy.length > 0 || quote.depth.sell.length > 0) && (
+            <MarketDepthTable depth={quote.depth} />
+          )}
         </div>
 
         <OrderForm tradingSymbol={symbol} ltp={quote.ltp} />
