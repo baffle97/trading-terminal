@@ -215,7 +215,7 @@ Enforced by Biome (config in `biome.json`):
 - [x] Candlestick charts with TradingView Lightweight Charts
 - [x] Order form (Market + Limit types)
 - [x] Mock Groww service layer
-- [ ] Groww API integration (replace mocks)
+- [x] Groww API integration (replace mocks)
 - [ ] WebSocket live price feed (Groww LiveFeed SDK)
 - [ ] Instrument CSV sync job (Vercel Cron)
 - [ ] Keyboard shortcuts (/, B, S, Esc)
