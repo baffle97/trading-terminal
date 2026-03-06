@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, publicProcedure } from "../init";
+import { router, protectedProcedure } from "../init";
 import {
   placeOrder,
   getOrders,
@@ -8,17 +8,22 @@ import {
 } from "~/server/groww/orders";
 
 export const ordersRouter = router({
-  list: publicProcedure.query(async () => {
+  list: protectedProcedure.query(async () => {
     return getOrders();
   }),
 
-  detail: publicProcedure
-    .input(z.object({ orderId: z.string().uuid() }))
+  detail: protectedProcedure
+    .input(
+      z.object({
+        growwOrderId: z.string(),
+        segment: z.string().default("CASH"),
+      })
+    )
     .query(async ({ input }) => {
-      return getOrderDetail(input.orderId);
+      return getOrderDetail(input.growwOrderId, input.segment);
     }),
 
-  place: publicProcedure
+  place: protectedProcedure
     .input(
       z.object({
         tradingSymbol: z.string(),
@@ -35,9 +40,14 @@ export const ordersRouter = router({
       return placeOrder(input);
     }),
 
-  cancel: publicProcedure
-    .input(z.object({ orderId: z.string().uuid() }))
+  cancel: protectedProcedure
+    .input(
+      z.object({
+        growwOrderId: z.string(),
+        segment: z.string().default("CASH"),
+      })
+    )
     .mutation(async ({ input }) => {
-      return cancelOrder(input.orderId);
+      return cancelOrder(input.growwOrderId, input.segment);
     }),
 });

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, publicProcedure } from "../init";
+import { router, protectedProcedure } from "../init";
 import {
   getQuote,
   getBatchLTP,
@@ -11,19 +11,19 @@ import {
 } from "~/server/groww/instruments";
 
 export const marketRouter = router({
-  quote: publicProcedure
+  quote: protectedProcedure
     .input(z.object({ tradingSymbol: z.string() }))
     .query(async ({ input }) => {
       return getQuote(input.tradingSymbol);
     }),
 
-  batchLtp: publicProcedure
+  batchLtp: protectedProcedure
     .input(z.object({ symbols: z.array(z.string()).max(50) }))
     .query(async ({ input }) => {
       return getBatchLTP(input.symbols);
     }),
 
-  historicalCandles: publicProcedure
+  historicalCandles: protectedProcedure
     .input(
       z.object({
         tradingSymbol: z.string(),
@@ -34,7 +34,7 @@ export const marketRouter = router({
       return getHistoricalCandles(input.tradingSymbol, input.timeframe);
     }),
 
-  search: publicProcedure
+  search: protectedProcedure
     .input(z.object({ query: z.string().min(1) }))
     .query(async ({ input }) => {
       // Try DB first, fall back to mock instruments

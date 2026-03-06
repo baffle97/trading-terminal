@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { TRPCProvider } from "~/lib/trpc-provider";
-import { Sidebar } from "~/components/layout/sidebar";
-import { Header } from "~/components/layout/header";
+import { AppShell } from "~/components/layout/app-shell";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,13 +17,7 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className="antialiased">
         <TRPCProvider>
-          <div className="flex h-screen overflow-hidden">
-            <Sidebar />
-            <div className="flex flex-1 flex-col overflow-hidden">
-              <Header />
-              <main className="flex-1 overflow-y-auto p-6">{children}</main>
-            </div>
-          </div>
+          <AppShell>{children}</AppShell>
         </TRPCProvider>
       </body>
     </html>

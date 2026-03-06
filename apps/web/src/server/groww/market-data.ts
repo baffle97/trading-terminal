@@ -1,5 +1,4 @@
-// TODO: Replace all mock data with actual Groww API calls
-// import { growwFetch } from "./client";
+import { growwFetch } from "./client";
 
 export interface Quote {
   tradingSymbol: string;
@@ -23,93 +22,139 @@ export interface CandleData {
   volume: number;
 }
 
-// Mock: Replace with GET /v1/market/quote?trading_symbol=X&segment=CASH
+interface QuotePayload {
+  last_price: number;
+  ohlc: { open: number; high: number; low: number; close: number } | string;
+  volume: number;
+  day_change: number;
+  day_change_perc: number;
+}
+
+interface CandlesPayload {
+  candles: [number, number, number, number, number, number][];
+}
+
 export async function getQuote(tradingSymbol: string): Promise<Quote> {
-  const basePrice = getMockBasePrice(tradingSymbol);
-  const change = (Math.random() - 0.5) * basePrice * 0.04;
+  const params = new URLSearchParams({
+    exchange: "NSE",
+    segment: "CASH",
+    trading_symbol: tradingSymbol,
+  });
+
+  const payload = await growwFetch<QuotePayload>(
+    `/v1/live-data/quote?${params}`
+  );
+
+  const ohlc = parseOHLC(payload.ohlc);
 
   return {
     tradingSymbol,
     exchange: "NSE",
-    ltp: basePrice + change,
-    open: basePrice - basePrice * 0.005,
-    high: basePrice + basePrice * 0.02,
-    low: basePrice - basePrice * 0.015,
-    close: basePrice,
-    volume: Math.floor(Math.random() * 10000000),
-    change,
-    changePercent: (change / basePrice) * 100,
+    ltp: payload.last_price,
+    open: ohlc.open,
+    high: ohlc.high,
+    low: ohlc.low,
+    close: ohlc.close,
+    volume: payload.volume,
+    change: payload.day_change,
+    changePercent: payload.day_change_perc,
   };
 }
 
-// Mock: Replace with GET /v1/market/ltp?trading_symbols=X,Y,Z
 export async function getBatchLTP(
   symbols: string[]
 ): Promise<Record<string, number>> {
+  const exchangeSymbols = symbols.map((s) => `NSE_${s}`).join(",");
+  const params = new URLSearchParams({
+    segment: "CASH",
+    exchange_symbols: exchangeSymbols,
+  });
+
+  const payload = await growwFetch<Record<string, number>>(
+    `/v1/live-data/ltp?${params}`
+  );
+
   const result: Record<string, number> = {};
-  for (const symbol of symbols) {
-    const base = getMockBasePrice(symbol);
-    result[symbol] = base + (Math.random() - 0.5) * base * 0.02;
+  for (const [key, value] of Object.entries(payload)) {
+    const symbol = key.replace(/^(NSE|BSE)_/, "");
+    result[symbol] = value;
   }
   return result;
 }
 
-// Mock: Replace with GET /v1/historical/candles
+const TIMEFRAME_CONFIG: Record<
+  string,
+  { daysBack: number; intervalMinutes: number }
+> = {
+  "1d": { daysBack: 1, intervalMinutes: 5 },
+  "1w": { daysBack: 7, intervalMinutes: 15 },
+  "1m": { daysBack: 30, intervalMinutes: 60 },
+  "3m": { daysBack: 90, intervalMinutes: 1440 },
+  "1y": { daysBack: 365, intervalMinutes: 1440 },
+  "5y": { daysBack: 1825, intervalMinutes: 10080 },
+};
+
 export async function getHistoricalCandles(
   tradingSymbol: string,
-  _timeframe: string
+  timeframe: string
 ): Promise<CandleData[]> {
-  const basePrice = getMockBasePrice(tradingSymbol);
-  const candles: CandleData[] = [];
-  let price = basePrice * 0.85;
+  const config = TIMEFRAME_CONFIG[timeframe] ?? TIMEFRAME_CONFIG["1d"];
 
-  for (let i = 100; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
+  const endTime = Math.floor(Date.now() / 1000);
+  const startTime = endTime - config.daysBack * 86400;
 
-    const dayChange = (Math.random() - 0.48) * price * 0.03;
-    const open = price;
-    const close = price + dayChange;
-    const high = Math.max(open, close) + Math.random() * price * 0.01;
-    const low = Math.min(open, close) - Math.random() * price * 0.01;
+  const params = new URLSearchParams({
+    exchange: "NSE",
+    segment: "CASH",
+    trading_symbol: tradingSymbol,
+    start_time: startTime.toString(),
+    end_time: endTime.toString(),
+    interval_in_minutes: config.intervalMinutes.toString(),
+  });
 
-    candles.push({
-      time: Math.floor(date.getTime() / 1000),
-      open: Number(open.toFixed(2)),
-      high: Number(high.toFixed(2)),
-      low: Number(low.toFixed(2)),
-      close: Number(close.toFixed(2)),
-      volume: Math.floor(Math.random() * 5000000),
-    });
+  const payload = await growwFetch<CandlesPayload>(
+    `/v1/historical/candle/range?${params}`
+  );
 
-    price = close;
-  }
-
-  return candles;
+  return (payload.candles ?? []).map(
+    ([time, open, high, low, close, volume]) => ({
+      time,
+      open,
+      high,
+      low,
+      close,
+      volume,
+    })
+  );
 }
 
-function getMockBasePrice(symbol: string): number {
-  const prices: Record<string, number> = {
-    RELIANCE: 2450.0,
-    TCS: 3890.0,
-    HDFCBANK: 1620.0,
-    INFY: 1580.0,
-    ICICIBANK: 1180.0,
-    HINDUNILVR: 2340.0,
-    ITC: 440.0,
-    SBIN: 780.0,
-    BHARTIARTL: 1650.0,
-    KOTAKBANK: 1780.0,
-    LT: 3450.0,
-    AXISBANK: 1120.0,
-    WIPRO: 480.0,
-    ASIANPAINT: 2280.0,
-    HCLTECH: 1720.0,
-    MARUTI: 12500.0,
-    ULTRACEMCO: 10200.0,
-    TITAN: 3250.0,
-    BAJFINANCE: 6800.0,
-    SUNPHARMA: 1820.0,
-  };
-  return prices[symbol] ?? 500 + Math.random() * 2000;
+function parseOHLC(value: unknown): {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+} {
+  if (typeof value === "object" && value !== null) {
+    const obj = value as Record<string, number>;
+    return {
+      open: obj.open ?? 0,
+      high: obj.high ?? 0,
+      low: obj.low ?? 0,
+      close: obj.close ?? 0,
+    };
+  }
+  if (typeof value === "string") {
+    const m = value.match(
+      /open:\s*([\d.]+).*high:\s*([\d.]+).*low:\s*([\d.]+).*close:\s*([\d.]+)/
+    );
+    if (m) {
+      return {
+        open: parseFloat(m[1]),
+        high: parseFloat(m[2]),
+        low: parseFloat(m[3]),
+        close: parseFloat(m[4]),
+      };
+    }
+  }
+  return { open: 0, high: 0, low: 0, close: 0 };
 }
