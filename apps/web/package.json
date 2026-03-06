@@ -1,0 +1,43 @@
+{
+  "name": "@growwtrade/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "biome check ./src",
+    "format": "biome check --fix ./src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@growwtrade/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.49.0",
+    "@tanstack/react-query": "^5.64.0",
+    "@trpc/client": "^11.0.0",
+    "@trpc/next": "^11.0.0",
+    "@trpc/react-query": "^11.0.0",
+    "@trpc/server": "^11.0.0",
+    "@upstash/redis": "^1.34.0",
+    "clsx": "^2.1.0",
+    "lightweight-charts": "^4.2.0",
+    "lucide-react": "^0.468.0",
+    "next": "^15.1.0",
+    "otplib": "^12.0.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "superjson": "^2.2.2",
+    "tailwind-merge": "^2.6.0",
+    "zod": "^3.24.0",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.4",
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.8.0"
+  }
+}

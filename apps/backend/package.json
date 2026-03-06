@@ -1,0 +1,16 @@
+{
+  "name": "@growwtrade/backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "supabase start",
+    "types": "supabase gen types typescript --project-id cifsknoqvaehwlpykoqq > ../packages/shared/src/db.types.ts",
+    "migrate": "supabase db push --project-ref cifsknoqvaehwlpykoqq",
+    "lint": "echo 'no lint for backend'",
+    "format": "echo 'no format for backend'",
+    "typecheck": "echo 'no typecheck for backend'"
+  },
+  "devDependencies": {
+    "supabase": "^2.0.0"
+  }
+}

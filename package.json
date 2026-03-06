@@ -1,0 +1,26 @@
+{
+  "name": "growwtrade-pro",
+  "private": true,
+  "packageManager": "pnpm@10.17.1",
+  "scripts": {
+    "dev:web": "pnpm --filter @growwtrade/web dev",
+    "dev:backend": "pnpm --filter @growwtrade/backend dev",
+    "build": "pnpm -r run build",
+    "build:web": "pnpm --filter @growwtrade/web build",
+    "lint": "pnpm -r run lint",
+    "format": "pnpm -r run format",
+    "typecheck": "pnpm -r run typecheck",
+    "types": "pnpm --filter @growwtrade/shared types"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.4",
+    "typescript": "^5.8.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "supabase",
+      "sharp",
+      "esbuild"
+    ]
+  }
+}
