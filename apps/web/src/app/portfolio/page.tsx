@@ -5,7 +5,10 @@ import { PnlSummary } from "~/components/portfolio/pnl-summary";
 import { HoldingsTable } from "~/components/portfolio/holdings-table";
 
 export default function PortfolioPage() {
-  const { data: portfolio, isLoading } = trpc.portfolio.summary.useQuery();
+  const { data: portfolio, isLoading } = trpc.portfolio.summary.useQuery(
+    undefined,
+    { refetchInterval: 5000 }
+  );
 
   if (isLoading) {
     return (
