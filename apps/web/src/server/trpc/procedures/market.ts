@@ -8,10 +8,7 @@ import {
   getOptionChain,
   getGreeks,
 } from "~/server/groww/market-data";
-import {
-  searchInstruments,
-  getMockInstruments,
-} from "~/server/groww/instruments";
+import { searchInstruments } from "~/server/groww/instruments";
 
 export const marketRouter = router({
   quote: protectedProcedure
@@ -76,8 +73,6 @@ export const marketRouter = router({
   search: protectedProcedure
     .input(z.object({ query: z.string().min(1) }))
     .query(async ({ input }) => {
-      const results = await searchInstruments(input.query);
-      if (results.length > 0) return results;
-      return getMockInstruments(input.query);
+      return searchInstruments(input.query);
     }),
 });

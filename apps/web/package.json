@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "biome check ./src",
     "format": "biome check --fix ./src",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "sync:instruments": "node --experimental-strip-types --env-file=.env.local scripts/sync-instruments.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",

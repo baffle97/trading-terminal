@@ -11,12 +11,18 @@ interface StockSearchProps {
 
 export function StockSearch({ onClose }: StockSearchProps) {
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
   const { data: results } = trpc.market.search.useQuery(
-    { query },
-    { enabled: query.length >= 1 }
+    { query: debouncedQuery },
+    { enabled: debouncedQuery.length >= 1 }
   );
 
   useEffect(() => {
