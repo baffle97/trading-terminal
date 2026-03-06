@@ -1,6 +1,6 @@
 # GrowwTrade Pro — Build Checklist
 
-Last updated: 2026-03-06
+Last updated: 2026-03-07
 
 Legend: ✅ Done · ⚠️ Partial · ❌ Not started
 
@@ -23,8 +23,8 @@ Legend: ✅ Done · ⚠️ Partial · ❌ Not started
 | 1.9 | Login page (3-tab UI) | ✅ | `src/app/login/page.tsx` |
 | 1.10 | `AppShell` auth guard | ✅ | `src/components/layout/app-shell.tsx` |
 | 1.11 | Logout (clears Redis, redirects) | ✅ | `src/server/trpc/procedures/auth.ts` |
-| 1.12 | Instrument search (Supabase full-text + mock fallback) | ⚠️ | Search works; instruments table is empty — CSV sync not done |
-| 1.13 | Instrument CSV sync job | ❌ | No cron/script to populate instruments table |
+| 1.12 | Instrument search (Supabase full-text, no mock) | ✅ | Mock fallback removed; 300ms debounce added; real DB only |
+| 1.13 | Instrument CSV sync job | ✅ | `scripts/sync-instruments.ts` — downloads Groww CSV, upserts 11,494 CASH instruments; `pnpm sync:instruments` |
 | 1.14 | Token refresh cron job (BullMQ) | ❌ | BullMQ not installed; token refresh is manual via login UI |
 | 1.15 | shadcn/ui installed + configured | ✅ | Zinc dark theme, Geist font, sonner toast, button component |
 
@@ -34,7 +34,7 @@ Legend: ✅ Done · ⚠️ Partial · ❌ Not started
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 2.1 | Stock search (Command-K palette) | ✅ | `src/components/stock/stock-search.tsx` · `/` shortcut triggers modal |
+| 2.1 | Stock search (Command-K palette) | ✅ | `src/components/stock/stock-search.tsx` · `/` shortcut triggers modal · 300ms debounce · real DB |
 | 2.2 | Market overview page (NIFTY 50 + SENSEX tabs) | ✅ | Tab switcher with all 50 NIFTY / 30 SENSEX stocks, 5s polling |
 | 2.3 | Real LTP — batch API (≤50, auto-chunked) | ✅ | `getBatchLTP` batches into groups of 50 |
 | 2.4 | Real OHLC batch API | ✅ | `getBatchOHLC` · used for real change % across all pages |
@@ -135,7 +135,7 @@ Ordered by impact vs effort. All are Phase 1 items.
 | P13 | **Mobile responsive sidebar** | Hamburger menu + drawer for small screens |
 | P14 | **Error boundaries (`error.tsx`)** | Unhandled errors currently show blank screen |
 | P15 | **Market Ticker in header** | Scrolling Nifty 50 / index prices |
-| P16 | **Instrument CSV sync** | Populate instruments table so search works without mock fallback |
+| ~~P16~~ | ~~**Instrument CSV sync**~~ | ✅ Done — `scripts/sync-instruments.ts`, 11,494 CASH instruments seeded |
 | P17 | **EOD portfolio snapshot job** | Needed for Phase 2 portfolio analyzer agent |
 | P18 | **WebSocket LiveFeed → SSE bridge** | True real-time; current polling is a workable interim |
 
