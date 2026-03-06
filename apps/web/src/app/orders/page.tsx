@@ -48,41 +48,41 @@ export default function OrdersPage() {
             <tbody>
               {orders.map((order) => (
                 <tr
-                  key={order.id}
+                  key={order.growwOrderId}
                   className="border-b border-border last:border-b-0 hover:bg-surface-tertiary"
                 >
                   <td className="px-4 py-3 text-xs text-text-secondary">
-                    {new Date(order.created_at).toLocaleString("en-IN")}
+                    {new Date(order.createdAt).toLocaleString("en-IN")}
                   </td>
                   <td className="px-4 py-3 font-medium">
-                    {order.trading_symbol}
+                    {order.tradingSymbol}
                   </td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
-                        order.transaction_type === "BUY"
+                        order.transactionType === "BUY"
                           ? "bg-profit/10 text-profit"
                           : "bg-loss/10 text-loss"
                       }`}
                     >
-                      {order.transaction_type}
+                      {order.transactionType}
                     </span>
                     <span className="ml-1 text-xs text-text-muted">
-                      {order.order_type}
+                      {order.orderType}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {order.filled_quantity}/{order.quantity}
+                    {order.filledQuantity}/{order.quantity}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {order.average_fill_price
-                      ? formatCurrency(order.average_fill_price)
+                    {order.averageFillPrice
+                      ? formatCurrency(order.averageFillPrice)
                       : order.price
                         ? formatCurrency(order.price)
                         : "-"}
                   </td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={order.status ?? "OPEN"} />
+                    <StatusBadge status={order.status} />
                   </td>
                 </tr>
               ))}
@@ -97,7 +97,9 @@ export default function OrdersPage() {
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     COMPLETE: "bg-profit/10 text-profit",
+    EXECUTED: "bg-profit/10 text-profit",
     OPEN: "bg-primary/10 text-primary",
+    PENDING: "bg-primary/10 text-primary",
     CANCELLED: "bg-text-muted/10 text-text-muted",
     REJECTED: "bg-loss/10 text-loss",
   };

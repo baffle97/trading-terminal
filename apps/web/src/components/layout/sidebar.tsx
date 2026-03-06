@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   BarChart3,
   ShoppingCart,
   Wallet,
   Star,
+  LogOut,
 } from "lucide-react";
+import { trpc } from "~/lib/trpc";
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -20,6 +22,10 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const logoutMutation = trpc.auth.logout.useMutation({
+    onSuccess: () => router.replace("/login"),
+  });
 
   return (
     <aside className="flex w-60 flex-col border-r border-border bg-surface-secondary">
@@ -56,8 +62,15 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      <div className="border-t border-border p-4">
-        <p className="text-xs text-text-muted">Phase 1 - Mock Data</p>
+      <div className="border-t border-border p-3">
+        <button
+          onClick={() => logoutMutation.mutate()}
+          disabled={logoutMutation.isPending}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-surface-tertiary hover:text-loss"
+        >
+          <LogOut className="h-4 w-4" />
+          {logoutMutation.isPending ? "Logging out..." : "Logout"}
+        </button>
       </div>
     </aside>
   );

@@ -1,4 +1,4 @@
-import { router, publicProcedure } from "../init";
+import { router, protectedProcedure } from "../init";
 import {
   getHoldings,
   getMargin,
@@ -6,15 +6,15 @@ import {
 } from "~/server/groww/portfolio";
 
 export const portfolioRouter = router({
-  holdings: publicProcedure.query(async () => {
+  holdings: protectedProcedure.query(async () => {
     return getHoldings();
   }),
 
-  margin: publicProcedure.query(async () => {
+  margin: protectedProcedure.query(async () => {
     return getMargin();
   }),
 
-  summary: publicProcedure.query(async () => {
+  summary: protectedProcedure.query(async () => {
     return getPortfolioSummary();
   }),
 });
