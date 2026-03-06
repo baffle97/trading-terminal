@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { trpc } from "~/lib/trpc";
 import { formatCurrency } from "~/lib/utils";
+import { toast } from "sonner";
 
 interface OrderFormProps {
   tradingSymbol: string;
@@ -10,18 +11,26 @@ interface OrderFormProps {
 }
 
 export function OrderForm({ tradingSymbol, ltp }: OrderFormProps) {
-  const [transactionType, setTransactionType] = useState<"BUY" | "SELL">("BUY");
+  const [transactionType, setTransactionType] = useState<"BUY" | "SELL">(
+    "BUY"
+  );
   const [orderType, setOrderType] = useState<"MARKET" | "LIMIT">("MARKET");
   const [quantity, setQuantity] = useState(1);
   const [price, setPrice] = useState(ltp);
 
+  const utils = trpc.useUtils();
+
   const placeMutation = trpc.orders.place.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       setQuantity(1);
-      alert("Order placed successfully!");
+      toast.success(
+        `${transactionType} order placed for ${tradingSymbol}`,
+        { description: `Order ID: ${data.growwOrderId}` }
+      );
+      utils.orders.list.invalidate();
     },
     onError: (err) => {
-      alert(`Order failed: ${err.message}`);
+      toast.error("Order failed", { description: err.message });
     },
   });
 
