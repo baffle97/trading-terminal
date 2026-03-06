@@ -71,7 +71,7 @@ export async function loginWithApiKeySecret(
 
   const data = await res.json();
   if (!data.token) {
-    throw new GrowwAuthError(data.error?.message ?? "Login failed");
+    throw new GrowwAuthError(data.error?.message ?? "Login failed. Raw: " + JSON.stringify(data));
   }
   await redis.set(TOKEN_CACHE_KEY, data.token, { ex: TOKEN_TTL });
 }
@@ -94,7 +94,7 @@ export async function loginWithTotp(
 
   const data = await res.json();
   if (!data.token) {
-    throw new GrowwAuthError(data.error?.message ?? "Login failed");
+    throw new GrowwAuthError(data.error?.message ?? "Login failed. Raw: " + JSON.stringify(data));
   }
   await redis.set(TOKEN_CACHE_KEY, data.token, { ex: TOKEN_TTL });
 }
