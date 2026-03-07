@@ -94,6 +94,12 @@ function mapOrder(raw: GrowwOrderRaw): Order {
   };
 }
 
+function generateOrderRefId(): string {
+  const ts = Date.now().toString().slice(-8);
+  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `GT-${ts}-${rand}`;
+}
+
 export async function placeOrder(
   input: PlaceOrderInput
 ): Promise<OrderResponse> {
@@ -112,6 +118,7 @@ export async function placeOrder(
         product: input.product,
         order_type: input.orderType,
         transaction_type: input.transactionType,
+        order_reference_id: generateOrderRefId(),
       }),
     }
   );
@@ -171,6 +178,57 @@ export async function getOrderDetail(
   );
 
   return mapOrder(payload);
+}
+
+export interface ModifyOrderInput {
+  growwOrderId: string;
+  orderType: "MARKET" | "LIMIT" | "SL" | "SLM";
+  segment?: string;
+  quantity?: number;
+  price?: number;
+  triggerPrice?: number;
+}
+
+export async function modifyOrder(
+  input: ModifyOrderInput
+): Promise<{ growwOrderId: string; status: string }> {
+  const payload = await growwFetch<{
+    groww_order_id: string;
+    order_status: string;
+  }>("/v1/order/modify", {
+    method: "POST",
+    body: JSON.stringify({
+      groww_order_id: input.growwOrderId,
+      order_type: input.orderType,
+      segment: input.segment ?? "CASH",
+      ...(input.quantity != null && { quantity: input.quantity }),
+      ...(input.price != null && { price: input.price }),
+      ...(input.triggerPrice != null && { trigger_price: input.triggerPrice }),
+    }),
+  });
+
+  // Sync to Supabase
+  try {
+    const supabase = createServiceClient();
+    const update: Record<string, unknown> = {
+      status: payload.order_status,
+      updated_at: new Date().toISOString(),
+    };
+    if (input.quantity != null) update.quantity = input.quantity;
+    if (input.price != null) update.price = input.price;
+    if (input.triggerPrice != null) update.trigger_price = input.triggerPrice;
+    await supabase
+      .from("orders")
+      .update(update)
+      .eq("groww_order_id", input.growwOrderId);
+  } catch {
+    // Best-effort sync
+  }
+
+  return {
+    growwOrderId: payload.groww_order_id,
+    status: payload.order_status,
+  };
 }
 
 export async function cancelOrder(

@@ -5,6 +5,7 @@ import {
   getOrders,
   getOrderDetail,
   cancelOrder,
+  modifyOrder,
 } from "~/server/groww/orders";
 
 export const ordersRouter = router({
@@ -38,6 +39,21 @@ export const ordersRouter = router({
     )
     .mutation(async ({ input }) => {
       return placeOrder(input);
+    }),
+
+  modify: protectedProcedure
+    .input(
+      z.object({
+        growwOrderId: z.string(),
+        orderType: z.enum(["MARKET", "LIMIT", "SL", "SLM"]),
+        segment: z.string().default("CASH"),
+        quantity: z.number().int().positive().optional(),
+        price: z.number().positive().optional(),
+        triggerPrice: z.number().positive().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      return modifyOrder(input);
     }),
 
   cancel: protectedProcedure
