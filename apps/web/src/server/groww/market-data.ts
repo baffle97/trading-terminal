@@ -1,4 +1,5 @@
 import { growwFetch } from "./client";
+import { createServiceClient } from "~/lib/supabase";
 
 export interface DepthEntry {
   price: number;
@@ -262,15 +263,36 @@ export async function getBatchOHLC(
 
 const TIMEFRAME_CONFIG: Record<
   string,
-  { daysBack: number; intervalMinutes: number }
+  { daysBack: number; candleInterval: string }
 > = {
-  "1d": { daysBack: 1, intervalMinutes: 5 },
-  "1w": { daysBack: 7, intervalMinutes: 15 },
-  "1m": { daysBack: 30, intervalMinutes: 60 },
-  "3m": { daysBack: 90, intervalMinutes: 1440 },
-  "1y": { daysBack: 365, intervalMinutes: 1440 },
-  "5y": { daysBack: 1825, intervalMinutes: 10080 },
+  "1d": { daysBack: 1, candleInterval: "5minute" },
+  "1w": { daysBack: 7, candleInterval: "15minute" },
+  "1m": { daysBack: 30, candleInterval: "1hour" },
+  "3m": { daysBack: 90, candleInterval: "1day" },
+  "1y": { daysBack: 180, candleInterval: "1day" },
+  "5y": { daysBack: 180, candleInterval: "1month" },
 };
+
+async function resolveGrowwSymbol(tradingSymbol: string): Promise<string> {
+  const supabase = createServiceClient();
+  const { data } = await supabase
+    .from("instruments")
+    .select("groww_symbol")
+    .eq("trading_symbol", tradingSymbol)
+    .eq("segment", "CASH")
+    .limit(1)
+    .single();
+
+  return data?.groww_symbol ?? tradingSymbol;
+}
+
+interface NewCandlesPayload {
+  candles: [string, number, number, number, number, number, number | null][];
+  closing_price?: number;
+  start_time?: string;
+  end_time?: string;
+  interval_in_minutes?: number;
+}
 
 export async function getHistoricalCandles(
   tradingSymbol: string,
@@ -278,30 +300,32 @@ export async function getHistoricalCandles(
 ): Promise<CandleData[]> {
   const config = TIMEFRAME_CONFIG[timeframe] ?? TIMEFRAME_CONFIG["1d"];
 
+  const growwSymbol = await resolveGrowwSymbol(tradingSymbol);
+
   const endTime = Math.floor(Date.now() / 1000);
   const startTime = endTime - config.daysBack * 86400;
 
   const params = new URLSearchParams({
     exchange: "NSE",
     segment: "CASH",
-    trading_symbol: tradingSymbol,
+    groww_symbol: growwSymbol,
     start_time: startTime.toString(),
     end_time: endTime.toString(),
-    interval_in_minutes: config.intervalMinutes.toString(),
+    candle_interval: config.candleInterval,
   });
 
-  const payload = await growwFetch<CandlesPayload>(
-    `/v1/historical/candle/range?${params}`
+  const payload = await growwFetch<NewCandlesPayload>(
+    `/v1/historical/candles?${params}`
   );
 
   return (payload.candles ?? []).map(
-    ([time, open, high, low, close, volume]) => ({
-      time,
+    ([timestamp, open, high, low, close, volume]) => ({
+      time: Math.floor(new Date(timestamp).getTime() / 1000),
       open,
       high,
       low,
       close,
-      volume,
+      volume: volume ?? 0,
     })
   );
 }
