@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Loader2, TrendingUp, TrendingDown } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Loader2, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Wallet } from "lucide-react";
 import { trpc } from "~/lib/trpc";
 import { formatCurrency } from "~/lib/utils";
 import { toast } from "sonner";
-import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
 
 interface OrderFormProps {
@@ -35,7 +34,53 @@ export function OrderForm({ tradingSymbol, ltp }: OrderFormProps) {
   const isBuy = transactionType === "BUY";
   const showPrice = orderType === "LIMIT" || orderType === "SL";
   const showTrigger = orderType === "SL" || orderType === "SLM";
+  const effectivePrice = showPrice ? price : ltp;
+  const estimatedValue = quantity * effectivePrice;
 
+  // --- Margin queries ---
+  const { data: userMargin } = trpc.portfolio.margin.useQuery(undefined, {
+    staleTime: 30_000,
+  });
+
+  const marginQueryInput = useMemo(
+    () => ({
+      tradingSymbol,
+      transactionType,
+      quantity,
+      price: effectivePrice,
+      orderType,
+      product,
+    }),
+    [tradingSymbol, transactionType, quantity, effectivePrice, orderType, product]
+  );
+
+  const {
+    data: requiredMargin,
+    isFetching: isMarginLoading,
+  } = trpc.orders.requiredMargin.useQuery(marginQueryInput, {
+    enabled: quantity > 0 && effectivePrice > 0,
+    staleTime: 5_000,
+    retry: false,
+  });
+
+  const availableBalance = userMargin
+    ? product === "CNC"
+      ? userMargin.cncBalanceAvailable
+      : userMargin.misBalanceAvailable
+    : null;
+
+  const marginRequired = requiredMargin
+    ? product === "CNC"
+      ? requiredMargin.cncMarginRequired
+      : requiredMargin.misMarginRequired
+    : null;
+
+  const hasSufficientMargin =
+    availableBalance != null && marginRequired != null
+      ? availableBalance >= marginRequired
+      : true; // default to true while loading
+
+  // --- Place order ---
   const placeMutation = trpc.orders.place.useMutation({
     onSuccess: (data) => {
       setQuantity(1);
@@ -43,6 +88,7 @@ export function OrderForm({ tradingSymbol, ltp }: OrderFormProps) {
         description: `Order ID: ${data.growwOrderId}`,
       });
       utils.orders.list.invalidate();
+      utils.portfolio.margin.invalidate();
     },
     onError: (err) => {
       toast.error("Order failed", { description: err.message });
@@ -61,9 +107,6 @@ export function OrderForm({ tradingSymbol, ltp }: OrderFormProps) {
       triggerPrice: showTrigger ? triggerPrice : undefined,
     });
   }
-
-  const effectivePrice = showPrice ? price : ltp;
-  const estimatedValue = quantity * effectivePrice;
 
   return (
     <form
@@ -183,6 +226,16 @@ export function OrderForm({ tradingSymbol, ltp }: OrderFormProps) {
         <span className="font-semibold text-text-primary">{formatCurrency(estimatedValue)}</span>
       </div>
 
+      {/* Margin section */}
+      <MarginIndicator
+        availableBalance={availableBalance}
+        marginRequired={marginRequired}
+        brokerageAndCharges={requiredMargin?.brokerageAndCharges ?? null}
+        hasSufficientMargin={hasSufficientMargin}
+        isLoading={isMarginLoading}
+        product={product}
+      />
+
       {/* Product hint */}
       <p className="text-[11px] text-text-muted">
         {product === "CNC" ? "CNC — Delivery (held in demat)" : "MIS — Intraday (auto square-off)"}
@@ -191,7 +244,7 @@ export function OrderForm({ tradingSymbol, ltp }: OrderFormProps) {
       {/* Submit */}
       <button
         type="submit"
-        disabled={placeMutation.isPending}
+        disabled={placeMutation.isPending || !hasSufficientMargin}
         className={cn(
           "w-full rounded-lg py-2.5 text-sm font-semibold text-white transition-all duration-150 disabled:opacity-60 flex items-center justify-center gap-2",
           isBuy
@@ -204,6 +257,11 @@ export function OrderForm({ tradingSymbol, ltp }: OrderFormProps) {
             <Loader2 className="size-4 animate-spin" />
             Placing order...
           </>
+        ) : !hasSufficientMargin ? (
+          <>
+            <AlertTriangle className="size-4" />
+            Insufficient margin
+          </>
         ) : (
           <>
             {isBuy ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />}
@@ -212,5 +270,110 @@ export function OrderForm({ tradingSymbol, ltp }: OrderFormProps) {
         )}
       </button>
     </form>
+  );
+}
+
+/* ─── Margin Indicator ─── */
+
+function MarginIndicator({
+  availableBalance,
+  marginRequired,
+  brokerageAndCharges,
+  hasSufficientMargin,
+  isLoading,
+  product,
+}: {
+  availableBalance: number | null;
+  marginRequired: number | null;
+  brokerageAndCharges: number | null;
+  hasSufficientMargin: boolean;
+  isLoading: boolean;
+  product: Product;
+}) {
+  if (availableBalance == null && marginRequired == null && !isLoading) {
+    return null;
+  }
+
+  return (
+    <div
+      className={cn(
+        "rounded-lg border px-3 py-2.5 space-y-2 transition-colors duration-200",
+        isLoading
+          ? "border-border bg-surface"
+          : hasSufficientMargin
+            ? "border-profit/20 bg-profit/5"
+            : "border-loss/20 bg-loss/5"
+      )}
+    >
+      <div className="flex items-center gap-1.5 text-xs font-medium">
+        {isLoading ? (
+          <>
+            <Loader2 className="size-3 animate-spin text-text-muted" />
+            <span className="text-text-muted">Checking margin...</span>
+          </>
+        ) : hasSufficientMargin ? (
+          <>
+            <CheckCircle2 className="size-3 text-profit" />
+            <span className="text-profit">Margin available</span>
+          </>
+        ) : (
+          <>
+            <AlertTriangle className="size-3 text-loss" />
+            <span className="text-loss">Insufficient margin</span>
+          </>
+        )}
+      </div>
+
+      <div className="space-y-1">
+        <div className="flex justify-between text-xs">
+          <span className="text-text-muted">
+            <Wallet className="mr-1 inline size-3" />
+            Available ({product})
+          </span>
+          <span className="font-medium text-text-primary">
+            {availableBalance != null ? formatCurrency(availableBalance) : "—"}
+          </span>
+        </div>
+        <div className="flex justify-between text-xs">
+          <span className="text-text-muted">Required margin</span>
+          <span className="font-medium text-text-primary">
+            {marginRequired != null ? formatCurrency(marginRequired) : "—"}
+          </span>
+        </div>
+        {brokerageAndCharges != null && brokerageAndCharges > 0 && (
+          <div className="flex justify-between text-xs">
+            <span className="text-text-muted">Brokerage & charges</span>
+            <span className="font-medium text-text-primary">
+              {formatCurrency(brokerageAndCharges)}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Margin usage bar */}
+      {availableBalance != null && marginRequired != null && availableBalance > 0 && (
+        <div className="pt-0.5">
+          <div className="h-1.5 w-full rounded-full bg-surface-tertiary overflow-hidden">
+            <div
+              className={cn(
+                "h-full rounded-full transition-all duration-300",
+                hasSufficientMargin ? "bg-profit" : "bg-loss"
+              )}
+              style={{
+                width: `${Math.min(100, (marginRequired / availableBalance) * 100)}%`,
+              }}
+            />
+          </div>
+          <div className="mt-1 flex justify-between text-[10px] text-text-muted">
+            <span>{Math.round((marginRequired / availableBalance) * 100)}% of available</span>
+            {!hasSufficientMargin && (
+              <span className="text-loss font-medium">
+                Short by {formatCurrency(marginRequired - availableBalance)}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
