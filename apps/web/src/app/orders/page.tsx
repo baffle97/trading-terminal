@@ -113,17 +113,23 @@ export default function OrdersPage() {
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    COMPLETE: "bg-profit/10 text-profit",
+    NEW: "bg-primary/10 text-primary",
+    ACKED: "bg-primary/10 text-primary",
+    TRIGGER_PENDING: "bg-yellow-500/10 text-yellow-600",
+    APPROVED: "bg-primary/10 text-primary",
     EXECUTED: "bg-profit/10 text-profit",
-    OPEN: "bg-primary/10 text-primary",
-    PENDING: "bg-primary/10 text-primary",
+    COMPLETED: "bg-profit/10 text-profit",
+    DELIVERY_AWAITED: "bg-profit/10 text-profit",
     CANCELLED: "bg-text-muted/10 text-text-muted",
+    CANCELLATION_REQUESTED: "bg-yellow-500/10 text-yellow-600",
+    MODIFICATION_REQUESTED: "bg-yellow-500/10 text-yellow-600",
     REJECTED: "bg-loss/10 text-loss",
+    FAILED: "bg-loss/10 text-loss",
   };
 
   return (
     <span
-      className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${styles[status] ?? styles.OPEN}`}
+      className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${styles[status] ?? "bg-primary/10 text-primary"}`}
     >
       {status}
     </span>

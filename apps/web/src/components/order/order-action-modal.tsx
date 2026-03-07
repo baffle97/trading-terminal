@@ -27,8 +27,9 @@ export function OrderActionModal({ order, onClose }: OrderActionModalProps) {
   const [view, setView] = useState<ModalView>("actions");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const isCancellable = order.status === "OPEN" || order.status === "PENDING";
-  const isModifiable = isCancellable;
+  const ACTIVE_STATUSES = ["NEW", "ACKED", "TRIGGER_PENDING", "APPROVED"];
+  const isModifiable = ACTIVE_STATUSES.includes(order.status);
+  const isCancellable = ACTIVE_STATUSES.includes(order.status);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
