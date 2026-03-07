@@ -77,7 +77,13 @@ export default function StockDetailPage({
             ))}
           </div>
 
-          {candles && <CandlestickChart data={candles} />}
+          {candles && candles.length > 0 ? (
+            <CandlestickChart data={candles} />
+          ) : candles && candles.length === 0 ? (
+            <div className="flex h-[200px] items-center justify-center rounded-lg border border-border bg-surface text-sm text-text-muted">
+              Chart data unavailable for this timeframe
+            </div>
+          ) : null}
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <InfoItem label="Open" value={formatCurrency(quote.open)} />
