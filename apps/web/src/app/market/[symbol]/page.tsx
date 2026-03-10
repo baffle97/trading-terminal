@@ -5,6 +5,7 @@ import { trpc } from "~/lib/trpc";
 import { CandlestickChart } from "~/components/charts/candlestick-chart";
 import { OrderForm } from "~/components/order/order-form";
 import { MarketDepthTable } from "~/components/stock/market-depth";
+import { StockHoldingCard } from "~/components/stock/stock-holding-card";
 import { formatCurrency, formatPercent } from "~/lib/utils";
 import { CHART_TIMEFRAMES } from "~/lib/constants";
 
@@ -27,6 +28,11 @@ export default function StockDetailPage({
     tradingSymbol: symbol,
     timeframe,
   });
+
+  const { data: holdings } = trpc.portfolio.holdings.useQuery(undefined, {
+    refetchInterval: POLL_INTERVAL,
+  });
+  const stockHolding = holdings?.find((h) => h.tradingSymbol === symbol);
 
   if (!quote) {
     return (
@@ -77,7 +83,15 @@ export default function StockDetailPage({
             ))}
           </div>
 
-          {candles && <CandlestickChart data={candles} />}
+          {candles && candles.length > 0 ? (
+            <CandlestickChart data={candles} />
+          ) : candles && candles.length === 0 ? (
+            <div className="flex h-[200px] items-center justify-center rounded-lg border border-border bg-surface text-sm text-text-muted">
+              Chart data unavailable for this timeframe
+            </div>
+          ) : null}
+
+          {stockHolding && <StockHoldingCard holding={stockHolding} />}
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <InfoItem label="Open" value={formatCurrency(quote.open)} />

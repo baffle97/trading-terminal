@@ -58,16 +58,23 @@ Legend: ✅ Done · ⚠️ Partial · ❌ Not started
 | # | Task | Status | Notes |
 |---|------|--------|-------|
 | 3.1 | Order form — MARKET + LIMIT | ✅ | `src/components/order/order-form.tsx` |
-| 3.2 | Order form — SL + SL-M types | ❌ | Service layer supports it; UI only shows MARKET/LIMIT |
-| 3.3 | Place order (Groww API + Supabase sync) | ✅ | `placeOrder` in `src/server/groww/orders.ts` |
+| 3.2 | Order form — SL + SL-M types | ✅ | MKT / LMT / SL / SL-M tabs with animated trigger price input |
+| 3.3 | Place order (Groww API + Supabase sync) | ✅ | `placeOrder` with `order_reference_id` generation |
 | 3.4 | Order list (today's orders from Groww) | ✅ | `getOrders` |
-| 3.5 | Order detail | ✅ | `getOrderDetail` |
-| 3.6 | Cancel order (Groww + Supabase sync) | ✅ | `cancelOrder` in service layer |
-| 3.7 | Cancel button in orders table | ✅ | Shows for OPEN/PENDING orders; uses `trpc.orders.cancel` mutation |
-| 3.8 | Margin check before order placement | ❌ | `POST /v1/margin/calculate` not wired; no pre-order validation |
-| 3.9 | Order status polling post-placement | ❌ | After placement, orders page auto-refreshes at 5s but no per-order 2s poll |
-| 3.10 | Toast notifications (sonner) | ✅ | Replaced all `alert()` calls with `sonner` toasts (success/error) |
-| 3.11 | Orders page — 5s refetch polling | ✅ | `refetchInterval: 5000` on `orders.list` query |
+| 3.5 | Order detail | ✅ | `getOrderDetail` + detail view in order action modal |
+| 3.6 | Cancel order (Groww + Supabase sync) | ✅ | `cancelOrder` with confirmation step in modal |
+| 3.7 | Modify order (Groww + Supabase sync) | ✅ | `modifyOrder` — change qty, price, trigger price, order type |
+| 3.8 | Order action modal | ✅ | Click order row → modal with Modify / Cancel / View Details flows |
+| 3.9 | Cancel confirmation step | ✅ | Warning UI with order summary before confirming cancel |
+| 3.10 | Modify order form | ✅ | Update order type, qty, price, trigger price with validation |
+| 3.11 | Order form — CNC/MIS product toggle | ✅ | Delivery vs Intraday selector in order form |
+| 3.12 | Order statuses mapped to Groww API | ✅ | All 12 statuses: NEW, ACKED, TRIGGER_PENDING, APPROVED, EXECUTED, etc. |
+| 3.13 | Margin check before order placement | ✅ | Available margin + required margin shown in order form; blocks order if insufficient |
+| 3.14 | Order status polling post-placement | ❌ | After placement, orders page auto-refreshes at 5s but no per-order 2s poll |
+| 3.15 | Toast notifications (sonner) | ✅ | Replaced all `alert()` calls with `sonner` toasts (success/error) |
+| 3.16 | Orders page — 5s refetch polling | ✅ | `refetchInterval: 5000` on `orders.list` query |
+| 3.17 | Order form UI revamp | ✅ | Animated BUY/SELL toggle, Loader2 spinner, lucide icons, shadcn patterns |
+| 3.18 | Success state after modify/cancel | ✅ | Animated checkmark + success message in modal |
 
 ---
 
@@ -116,28 +123,32 @@ Legend: ✅ Done · ⚠️ Partial · ❌ Not started
 
 Ordered by impact vs effort. All are Phase 1 items.
 
-### 🟡 Medium priority (missing features, sprint plan items)
+### 🔴 High priority (core trading gaps)
 
 | Priority | Task | Why |
 |----------|------|-----|
-| P6 | **Positions page (intraday)** | API documented, pattern is clear — `getPositions` + page |
-| P7 | **SL + SL-M order types in OrderForm** | Architecture requires it; service layer already supports these |
-| P8 | **Margin check before order** | `POST /v1/margin/calculate` — prevents rejected orders |
-| P9 | **Order status polling post-placement** | Poll `/v1/order/detail/{id}` every 2s until terminal state |
-| P10 | **Watchlist Supabase CRUD** | Watchlists table exists; add/remove/create needs wiring |
+| ~~P1~~ | ~~**Margin check before order**~~ | ✅ Done — available + required margin in order form, blocks if insufficient |
+| P2 | **Watchlist Supabase CRUD** | Hardcoded symbols + "Add Stock" is a no-op — breaks core UX |
+
+### 🟡 Medium priority (UX + reliability)
+
+| Priority | Task | Why |
+|----------|------|-----|
+| P4 | **Order status polling post-placement** | Poll `/v1/order/detail/{id}` every 2s until terminal state |
+| P5 | **Error boundaries (`error.tsx`)** | Unhandled errors show blank page; bad for production |
+| P6 | **Mobile responsive sidebar** | Hamburger menu + drawer for small screens |
+| P7 | **Keyboard shortcuts (B, S, Esc, /)** | DX improvement; `/` search hint shown but not wired |
 
 ### 🟢 Lower priority (polish, infrastructure)
 
 | Priority | Task | Why |
 |----------|------|-----|
-| P11 | **Keyboard shortcuts (B, S, Esc)** | DX improvement; architecture requirement |
-| P12 | **Global `/` search keydown listener** | Hint is shown but keydown not wired |
-| P13 | **Mobile responsive sidebar** | Hamburger menu + drawer for small screens |
-| P14 | **Error boundaries (`error.tsx`)** | Unhandled errors currently show blank screen |
-| P15 | **Market Ticker in header** | Scrolling Nifty 50 / index prices |
-| ~~P16~~ | ~~**Instrument CSV sync**~~ | ✅ Done — `scripts/sync-instruments.ts`, 11,494 CASH instruments seeded |
-| P17 | **EOD portfolio snapshot job** | Needed for Phase 2 portfolio analyzer agent |
-| P18 | **WebSocket LiveFeed → SSE bridge** | True real-time; current polling is a workable interim |
+| P8 | **Market Ticker in header** | Scrolling Nifty 50 / index prices |
+| P9 | **EOD portfolio snapshot job** | Needed for Phase 2 portfolio analyzer agent |
+| P10 | **WebSocket LiveFeed → SSE bridge** | True real-time; current polling is a workable interim |
+| P11 | **Notification bell (in-app)** | Bell icon is a dummy; needs Supabase notifications table wiring |
+| P12 | **Token refresh cron job** | Currently manual login; needs BullMQ or cron-based refresh |
+| P13 | **Positions page (intraday)** | `/v1/positions/user` — `getPositions` + page; deprioritized for now |
 
 ---
 

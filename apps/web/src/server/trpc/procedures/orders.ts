@@ -7,6 +7,7 @@ import {
   cancelOrder,
   modifyOrder,
 } from "~/server/groww/orders";
+import { getRequiredMargin } from "~/server/groww/portfolio";
 
 export const ordersRouter = router({
   list: protectedProcedure.query(async () => {
@@ -65,5 +66,21 @@ export const ordersRouter = router({
     )
     .mutation(async ({ input }) => {
       return cancelOrder(input.growwOrderId, input.segment);
+    }),
+
+  requiredMargin: protectedProcedure
+    .input(
+      z.object({
+        tradingSymbol: z.string(),
+        transactionType: z.enum(["BUY", "SELL"]),
+        quantity: z.number().int().positive(),
+        price: z.number().positive(),
+        orderType: z.enum(["MARKET", "LIMIT", "SL", "SLM"]),
+        product: z.enum(["CNC", "MIS"]).default("CNC"),
+        exchange: z.string().default("NSE"),
+      })
+    )
+    .query(async ({ input }) => {
+      return getRequiredMargin(input);
     }),
 });

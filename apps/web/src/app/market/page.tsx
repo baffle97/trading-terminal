@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { Briefcase, TrendingUp, TrendingDown, IndianRupee, BarChart3 } from "lucide-react";
 import { trpc } from "~/lib/trpc";
 import { StockCard } from "~/components/stock/stock-card";
 import { LineChart } from "~/components/charts/line-chart";
 import { NIFTY_50, SENSEX_30 } from "~/lib/constants";
 import { formatCurrency, formatPercent } from "~/lib/utils";
+import { cn } from "~/lib/utils";
 
 const POLL_INTERVAL = 5000;
 
@@ -49,6 +51,11 @@ export default function MarketPage() {
     timeframe: "1d",
   });
 
+  // Portfolio summary
+  const { data: portfolio } = trpc.portfolio.summary.useQuery(undefined, {
+    staleTime: 30_000,
+  });
+
   // Compute index-level summary from constituent OHLC data
   const indexSummary = computeIndexSummary(prices, ohlcData);
 
@@ -60,6 +67,9 @@ export default function MarketPage() {
           Live prices and index overview
         </p>
       </div>
+
+      {/* Portfolio summary */}
+      {portfolio && <PortfolioSummaryCard portfolio={portfolio} />}
 
       {/* Tabs */}
       <div className="flex gap-2">
@@ -198,6 +208,88 @@ function computeIndexSummary(
     advancers,
     decliners,
   };
+}
+
+function PortfolioSummaryCard({
+  portfolio,
+}: {
+  portfolio: {
+    totalInvested: number;
+    totalCurrent: number;
+    overallPnl: number;
+    overallPnlPercent: number;
+    dayPnl: number;
+    dayPnlPercent: number;
+    holdings: unknown[];
+  };
+}) {
+  const isPositive = portfolio.overallPnl >= 0;
+  const isDayPositive = portfolio.dayPnl >= 0;
+
+  return (
+    <div className="rounded-xl border border-border bg-surface-secondary p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <Briefcase className="size-4 text-text-muted" />
+        <h2 className="text-sm font-semibold">Your Portfolio</h2>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-lg bg-surface px-3 py-2">
+          <div className="flex items-center gap-1 text-[11px] text-text-muted">
+            <IndianRupee className="size-3" />
+            Invested
+          </div>
+          <p className="mt-0.5 text-sm font-semibold">
+            {formatCurrency(portfolio.totalInvested)}
+          </p>
+        </div>
+        <div className="rounded-lg bg-surface px-3 py-2">
+          <div className="flex items-center gap-1 text-[11px] text-text-muted">
+            <BarChart3 className="size-3" />
+            Current
+          </div>
+          <p className="mt-0.5 text-sm font-semibold">
+            {formatCurrency(portfolio.totalCurrent)}
+          </p>
+        </div>
+        <div className="rounded-lg bg-surface px-3 py-2">
+          <div className="flex items-center gap-1 text-[11px] text-text-muted">
+            {isPositive ? (
+              <TrendingUp className="size-3 text-profit" />
+            ) : (
+              <TrendingDown className="size-3 text-loss" />
+            )}
+            Overall P&L
+          </div>
+          <p
+            className={cn(
+              "mt-0.5 text-sm font-semibold",
+              isPositive ? "text-profit" : "text-loss"
+            )}
+          >
+            {isPositive ? "+" : ""}
+            {formatCurrency(portfolio.overallPnl)} ({formatPercent(portfolio.overallPnlPercent)})
+          </p>
+        </div>
+        <div className="rounded-lg bg-surface px-3 py-2">
+          <div className="flex items-center gap-1 text-[11px] text-text-muted">
+            <Briefcase className="size-3" />
+            Holdings
+          </div>
+          <p className="mt-0.5 text-sm font-semibold">
+            {portfolio.holdings.length} stocks
+          </p>
+          <p
+            className={cn(
+              "text-[11px] font-medium",
+              isDayPositive ? "text-profit" : "text-loss"
+            )}
+          >
+            Today: {isDayPositive ? "+" : ""}{formatCurrency(portfolio.dayPnl)}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function GainerLoserSection({

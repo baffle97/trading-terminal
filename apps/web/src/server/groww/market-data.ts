@@ -269,7 +269,7 @@ const TIMEFRAME_CONFIG: Record<
   "1m": { daysBack: 30, intervalMinutes: 60 },
   "3m": { daysBack: 90, intervalMinutes: 1440 },
   "1y": { daysBack: 365, intervalMinutes: 1440 },
-  "5y": { daysBack: 1825, intervalMinutes: 10080 },
+  "5y": { daysBack: 1080, intervalMinutes: 10080 },
 };
 
 export async function getHistoricalCandles(
@@ -290,20 +290,25 @@ export async function getHistoricalCandles(
     interval_in_minutes: config.intervalMinutes.toString(),
   });
 
-  const payload = await growwFetch<CandlesPayload>(
-    `/v1/historical/candle/range?${params}`
-  );
+  try {
+    const payload = await growwFetch<CandlesPayload>(
+      `/v1/historical/candle/range?${params}`
+    );
 
-  return (payload.candles ?? []).map(
-    ([time, open, high, low, close, volume]) => ({
-      time,
-      open,
-      high,
-      low,
-      close,
-      volume,
-    })
-  );
+    return (payload.candles ?? []).map(
+      ([time, open, high, low, close, volume]) => ({
+        time,
+        open,
+        high,
+        low,
+        close,
+        volume,
+      })
+    );
+  } catch {
+    // Deprecated endpoint may fail — return empty gracefully
+    return [];
+  }
 }
 
 export async function getOptionChain(

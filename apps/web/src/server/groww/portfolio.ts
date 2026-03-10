@@ -29,6 +29,8 @@ export interface MarginInfo {
   availableMargin: number;
   usedMargin: number;
   totalMargin: number;
+  cncBalanceAvailable: number;
+  misBalanceAvailable: number;
 }
 
 interface GrowwHoldingsPayload {
@@ -104,6 +106,67 @@ export async function getMargin(): Promise<MarginInfo> {
     availableMargin,
     usedMargin,
     totalMargin: availableMargin + usedMargin,
+    cncBalanceAvailable:
+      payload.equity_margin_details?.cnc_balance_available ?? availableMargin,
+    misBalanceAvailable:
+      payload.equity_margin_details?.mis_balance_available ?? availableMargin,
+  };
+}
+
+export interface RequiredMarginInput {
+  tradingSymbol: string;
+  transactionType: "BUY" | "SELL";
+  quantity: number;
+  price: number;
+  orderType: string;
+  product: string;
+  exchange: string;
+}
+
+export interface RequiredMarginInfo {
+  totalRequirement: number;
+  cncMarginRequired: number;
+  misMarginRequired: number;
+  brokerageAndCharges: number;
+}
+
+interface GrowwRequiredMarginPayload {
+  total_requirement: number;
+  cash_cnc_margin_required: number;
+  cash_mis_margin_required: number;
+  brokerage_and_charges: number;
+  exposure_required?: number;
+  span_required?: number;
+  option_buy_premium?: number;
+  physical_delivery_margin_requirement?: number;
+}
+
+export async function getRequiredMargin(
+  input: RequiredMarginInput
+): Promise<RequiredMarginInfo> {
+  const payload = await growwFetch<GrowwRequiredMarginPayload>(
+    "/v1/margins/detail/orders?segment=CASH",
+    {
+      method: "POST",
+      body: JSON.stringify([
+        {
+          trading_symbol: input.tradingSymbol,
+          transaction_type: input.transactionType,
+          quantity: input.quantity,
+          price: input.price,
+          order_type: input.orderType,
+          product: input.product,
+          exchange: input.exchange,
+        },
+      ]),
+    }
+  );
+
+  return {
+    totalRequirement: payload.total_requirement ?? 0,
+    cncMarginRequired: payload.cash_cnc_margin_required ?? 0,
+    misMarginRequired: payload.cash_mis_margin_required ?? 0,
+    brokerageAndCharges: payload.brokerage_and_charges ?? 0,
   };
 }
 
