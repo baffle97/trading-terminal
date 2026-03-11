@@ -9,8 +9,10 @@ import {
   Wallet,
   Star,
   LogOut,
+  X,
 } from "lucide-react";
 import { trpc } from "~/lib/trpc";
+import { cn } from "~/lib/utils";
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -20,20 +22,35 @@ const NAV_ITEMS = [
   { href: "/watchlist", label: "Watchlist", icon: Star },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => router.replace("/login"),
   });
 
-  return (
-    <aside className="flex w-60 flex-col border-r border-border bg-surface-secondary">
-      <div className="flex h-14 items-center gap-2 border-b border-border px-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-          G
+  const sidebarContent = (
+    <aside className="flex h-full w-60 flex-col border-r border-border bg-surface-secondary">
+      <div className="flex h-14 items-center justify-between border-b border-border px-4">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+            G
+          </div>
+          <span className="text-lg font-semibold">GrowwTrade</span>
         </div>
-        <span className="text-lg font-semibold">GrowwTrade</span>
+        {onMobileClose && (
+          <button
+            onClick={onMobileClose}
+            className="rounded-lg p-1.5 text-text-secondary transition-colors hover:bg-surface-tertiary hover:text-text-primary md:hidden"
+          >
+            <X className="size-4" />
+          </button>
+        )}
       </div>
 
       <nav className="flex-1 p-3">
@@ -47,6 +64,7 @@ export function Sidebar() {
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  onClick={onMobileClose}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                     isActive
                       ? "bg-primary/10 text-primary"
@@ -73,5 +91,31 @@ export function Sidebar() {
         </button>
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar — always visible */}
+      <div className="hidden md:flex">{sidebarContent}</div>
+
+      {/* Mobile drawer — overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={onMobileClose}
+          />
+          {/* Drawer */}
+          <div
+            className={cn(
+              "relative h-full animate-in slide-in-from-left duration-200",
+            )}
+          >
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
