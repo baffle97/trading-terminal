@@ -92,7 +92,7 @@ Legend: ✅ Done · ⚠️ Partial · ❌ Not started
 | 4.8 | Watchlist — live prices via SSE | ✅ | `useLivePrices` hook replaces polling |
 | 4.9 | Keyboard shortcut — `/` open search | ⚠️ | Header shows `/` hint but keydown listener not wired globally |
 | 4.10 | Keyboard shortcuts — `B` buy, `S` sell, `Esc` | ❌ | Not implemented |
-| 4.11 | Mobile responsive layout | ❌ | Sidebar is always visible; no hamburger/drawer on mobile |
+| 4.11 | Mobile responsive layout | ✅ | Sidebar hidden on mobile, slide-in drawer with backdrop; hamburger in header; auto-close on nav; responsive padding/text |
 | 4.12 | Error boundaries (`error.tsx` pages) | ✅ | `global-error.tsx` (root), `error.tsx` (app shell, detects auth errors), `market/[symbol]/error.tsx` (stock-specific) |
 | 4.13 | Loading skeletons — portfolio/orders | ⚠️ | Market page has skeletons; portfolio/orders are basic |
 | 4.14 | EOD portfolio snapshot job | ❌ | `portfolio_snapshots` table exists; no job writes to it |
@@ -129,7 +129,7 @@ Ordered by user priority. All are Phase 1 items.
 |----------|------|--------|
 | ~~P1~~ | ~~**Order status polling post-placement**~~ | ✅ Done — `useOrderTracker` + `OrderStatusTracker` with 2s poll |
 | ~~P2~~ | ~~**Error boundaries (`error.tsx`)**~~ | ✅ Done — `global-error.tsx`, `error.tsx`, `market/[symbol]/error.tsx` |
-| P3 | **Mobile responsive sidebar** | Hamburger menu + drawer for small screens |
+| ~~P3~~ | ~~**Mobile responsive sidebar**~~ | ✅ Done — drawer with backdrop, hamburger toggle, auto-close on route change |
 | P4 | **Loading skeletons (portfolio, orders, stock detail)** | Better perceived performance |
 
 ### 🟡 Sprint B — Infrastructure & Data
