@@ -1,5 +1,5 @@
 import { growwFetch } from "./client";
-import { getBatchLTP } from "./market-data";
+import { getBatchLTP, getBatchOHLC } from "./market-data";
 
 export interface Holding {
   tradingSymbol: string;
@@ -70,13 +70,19 @@ export async function getHoldings(): Promise<Holding[]> {
   if (rawHoldings.length === 0) return [];
 
   const symbols = rawHoldings.map((h) => h.trading_symbol);
-  const ltpMap = await getBatchLTP(symbols);
+  const [ltpMap, ohlcMap] = await Promise.all([
+    getBatchLTP(symbols),
+    getBatchOHLC(symbols),
+  ]);
 
   return rawHoldings.map((h) => {
     const ltp = ltpMap[h.trading_symbol] ?? h.average_price;
     const invested = h.quantity * h.average_price;
     const currentValue = h.quantity * ltp;
     const pnl = currentValue - invested;
+    const prevClose = ohlcMap[h.trading_symbol]?.close ?? ltp;
+    const dayChange = ltp - prevClose;
+    const dayChangePercent = prevClose > 0 ? (dayChange / prevClose) * 100 : 0;
 
     return {
       tradingSymbol: h.trading_symbol,
@@ -88,8 +94,8 @@ export async function getHoldings(): Promise<Holding[]> {
       currentValue,
       pnl,
       pnlPercent: invested > 0 ? (pnl / invested) * 100 : 0,
-      dayChange: 0,
-      dayChangePercent: 0,
+      dayChange,
+      dayChangePercent,
     };
   });
 }
