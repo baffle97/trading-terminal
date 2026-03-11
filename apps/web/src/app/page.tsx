@@ -5,23 +5,16 @@ import { StockCard } from "~/components/stock/stock-card";
 import { PnlSummary } from "~/components/portfolio/pnl-summary";
 import { NIFTY_50 } from "~/lib/constants";
 import { formatCurrency } from "~/lib/utils";
+import { useLivePrices } from "~/hooks/use-live-prices";
 
 const TOP_STOCKS = [...NIFTY_50].slice(0, 10);
-const POLL_INTERVAL = 5000;
 
 export default function DashboardPage() {
   const { data: portfolio } = trpc.portfolio.summary.useQuery(undefined, {
-    refetchInterval: POLL_INTERVAL,
+    refetchInterval: 30_000,
   });
   const { data: margin } = trpc.portfolio.margin.useQuery();
-  const { data: prices } = trpc.market.batchLtp.useQuery(
-    { symbols: TOP_STOCKS },
-    { refetchInterval: POLL_INTERVAL }
-  );
-  const { data: ohlcData } = trpc.market.batchOhlc.useQuery(
-    { symbols: TOP_STOCKS },
-    { refetchInterval: POLL_INTERVAL }
-  );
+  const livePrices = useLivePrices(TOP_STOCKS);
 
   return (
     <div className="space-y-6">
@@ -59,22 +52,19 @@ export default function DashboardPage() {
       <div>
         <h2 className="mb-3 text-lg font-semibold">Top Stocks</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {prices &&
-            Object.entries(prices).map(([symbol, ltp]) => {
-              const prevClose = ohlcData?.[symbol]?.close ?? ltp;
-              const change = ltp - prevClose;
-              const changePercent =
-                prevClose > 0 ? (change / prevClose) * 100 : 0;
-              return (
-                <StockCard
-                  key={symbol}
-                  tradingSymbol={symbol}
-                  ltp={ltp}
-                  change={change}
-                  changePercent={changePercent}
-                />
-              );
-            })}
+          {TOP_STOCKS.map((symbol) => {
+            const tick = livePrices[symbol];
+            if (!tick) return null;
+            return (
+              <StockCard
+                key={symbol}
+                tradingSymbol={symbol}
+                ltp={tick.ltp}
+                change={tick.change}
+                changePercent={tick.changePercent}
+              />
+            );
+          })}
         </div>
       </div>
     </div>

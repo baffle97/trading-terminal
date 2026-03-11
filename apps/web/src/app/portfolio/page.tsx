@@ -7,7 +7,7 @@ import { HoldingsTable } from "~/components/portfolio/holdings-table";
 export default function PortfolioPage() {
   const { data: portfolio, isLoading } = trpc.portfolio.summary.useQuery(
     undefined,
-    { refetchInterval: 5000 }
+    { refetchInterval: 30_000 }
   );
 
   if (isLoading) {

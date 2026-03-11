@@ -8,8 +8,7 @@ import { LineChart } from "~/components/charts/line-chart";
 import { NIFTY_50, SENSEX_30 } from "~/lib/constants";
 import { formatCurrency, formatPercent } from "~/lib/utils";
 import { cn } from "~/lib/utils";
-
-const POLL_INTERVAL = 5000;
+import { useLivePrices } from "~/hooks/use-live-prices";
 
 type IndexTab = "NIFTY_50" | "SENSEX";
 
@@ -33,31 +32,23 @@ export default function MarketPage() {
   const [activeTab, setActiveTab] = useState<IndexTab>("NIFTY_50");
   const config = INDEX_CONFIG[activeTab];
 
-  const { data: prices, isLoading } = trpc.market.batchLtp.useQuery(
-    { symbols: config.symbols },
-    { refetchInterval: POLL_INTERVAL }
-  );
+  const livePrices = useLivePrices(config.symbols);
+  const hasLivePrices = Object.keys(livePrices).length > 0;
 
-  const { data: ohlcData } = trpc.market.batchOhlc.useQuery(
-    { symbols: config.symbols },
-    { refetchInterval: POLL_INTERVAL }
-  );
-
-  // Index chart — uses a well-known stock from the index as proxy
-  // (true index candle data would require a separate index candle endpoint)
+  // Index chart
   const indexProxy = activeTab === "NIFTY_50" ? "NIFTY 50" : "SENSEX";
   const { data: indexCandles } = trpc.market.historicalCandles.useQuery({
     tradingSymbol: indexProxy,
     timeframe: "1d",
   });
 
-  // Portfolio summary
+  // Portfolio summary (infrequent refresh is fine)
   const { data: portfolio } = trpc.portfolio.summary.useQuery(undefined, {
     staleTime: 30_000,
   });
 
-  // Compute index-level summary from constituent OHLC data
-  const indexSummary = computeIndexSummary(prices, ohlcData);
+  // Compute index-level summary from live data
+  const indexSummary = computeIndexSummary(livePrices);
 
   return (
     <div className="space-y-6">
@@ -68,7 +59,6 @@ export default function MarketPage() {
         </p>
       </div>
 
-      {/* Portfolio summary */}
       {portfolio && <PortfolioSummaryCard portfolio={portfolio} />}
 
       {/* Tabs */}
@@ -118,19 +108,17 @@ export default function MarketPage() {
       </div>
 
       {/* Gainers & Losers quick strip */}
-      {prices && ohlcData && (
+      {hasLivePrices && (
         <div className="grid gap-4 sm:grid-cols-2">
           <GainerLoserSection
             title="Top Gainers"
-            prices={prices}
-            ohlcData={ohlcData}
+            livePrices={livePrices}
             sort="gain"
             count={5}
           />
           <GainerLoserSection
             title="Top Losers"
-            prices={prices}
-            ohlcData={ohlcData}
+            livePrices={livePrices}
             sort="loss"
             count={5}
           />
@@ -143,7 +131,7 @@ export default function MarketPage() {
           All {config.label} Stocks
         </h2>
 
-        {isLoading && (
+        {!hasLivePrices && (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 12 }).map((_, i) => (
               <div
@@ -154,22 +142,18 @@ export default function MarketPage() {
           </div>
         )}
 
-        {prices && (
+        {hasLivePrices && (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {config.symbols.map((symbol) => {
-              const ltp = prices[symbol];
-              if (!ltp) return null;
-              const prevClose = ohlcData?.[symbol]?.close ?? ltp;
-              const change = ltp - prevClose;
-              const changePercent =
-                prevClose > 0 ? (change / prevClose) * 100 : 0;
+              const tick = livePrices[symbol];
+              if (!tick) return null;
               return (
                 <StockCard
                   key={symbol}
                   tradingSymbol={symbol}
-                  ltp={ltp}
-                  change={change}
-                  changePercent={changePercent}
+                  ltp={tick.ltp}
+                  change={tick.change}
+                  changePercent={tick.changePercent}
                 />
               );
             })}
@@ -181,30 +165,23 @@ export default function MarketPage() {
 }
 
 function computeIndexSummary(
-  prices?: Record<string, number>,
-  ohlcData?: Record<string, { open: number; high: number; low: number; close: number }>
+  livePrices: Record<string, { ltp: number; changePercent: number }>
 ) {
-  if (!prices || !ohlcData) return null;
+  const entries = Object.values(livePrices);
+  if (entries.length === 0) return null;
 
   let totalChangePercent = 0;
-  let count = 0;
   let advancers = 0;
   let decliners = 0;
 
-  for (const [symbol, ltp] of Object.entries(prices)) {
-    const ohlc = ohlcData[symbol];
-    if (!ohlc) continue;
-    const prevClose = ohlc.close;
-    if (prevClose <= 0) continue;
-    const changePct = ((ltp - prevClose) / prevClose) * 100;
-    totalChangePercent += changePct;
-    count++;
-    if (changePct >= 0) advancers++;
+  for (const tick of entries) {
+    totalChangePercent += tick.changePercent;
+    if (tick.changePercent >= 0) advancers++;
     else decliners++;
   }
 
   return {
-    avgChangePercent: count > 0 ? totalChangePercent / count : 0,
+    avgChangePercent: totalChangePercent / entries.length,
     advancers,
     decliners,
   };
@@ -294,24 +271,22 @@ function PortfolioSummaryCard({
 
 function GainerLoserSection({
   title,
-  prices,
-  ohlcData,
+  livePrices,
   sort,
   count,
 }: {
   title: string;
-  prices: Record<string, number>;
-  ohlcData: Record<string, { open: number; high: number; low: number; close: number }>;
+  livePrices: Record<string, { ltp: number; change: number; changePercent: number }>;
   sort: "gain" | "loss";
   count: number;
 }) {
-  const entries = Object.entries(prices)
-    .map(([symbol, ltp]) => {
-      const prevClose = ohlcData[symbol]?.close ?? ltp;
-      const change = ltp - prevClose;
-      const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
-      return { symbol, ltp, change, changePercent };
-    })
+  const entries = Object.entries(livePrices)
+    .map(([symbol, tick]) => ({
+      symbol,
+      ltp: tick.ltp,
+      change: tick.change,
+      changePercent: tick.changePercent,
+    }))
     .sort((a, b) =>
       sort === "gain"
         ? b.changePercent - a.changePercent

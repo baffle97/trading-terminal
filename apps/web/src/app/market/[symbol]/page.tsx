@@ -8,8 +8,7 @@ import { MarketDepthTable } from "~/components/stock/market-depth";
 import { StockHoldingCard } from "~/components/stock/stock-holding-card";
 import { formatCurrency, formatPercent } from "~/lib/utils";
 import { CHART_TIMEFRAMES } from "~/lib/constants";
-
-const POLL_INTERVAL = 3000;
+import { useLivePrice } from "~/hooks/use-live-prices";
 
 export default function StockDetailPage({
   params,
@@ -19,9 +18,13 @@ export default function StockDetailPage({
   const { symbol } = use(params);
   const [timeframe, setTimeframe] = useState("1d");
 
+  // Live price via SSE
+  const liveTick = useLivePrice(symbol);
+
+  // Full quote for depth, volume, circuits etc. (one-time fetch + slow refresh)
   const { data: quote } = trpc.market.quote.useQuery(
     { tradingSymbol: symbol },
-    { refetchInterval: POLL_INTERVAL }
+    { staleTime: 10_000, refetchInterval: 30_000 }
   );
 
   const { data: candles } = trpc.market.historicalCandles.useQuery({
@@ -30,11 +33,16 @@ export default function StockDetailPage({
   });
 
   const { data: holdings } = trpc.portfolio.holdings.useQuery(undefined, {
-    refetchInterval: POLL_INTERVAL,
+    staleTime: 30_000,
   });
   const stockHolding = holdings?.find((h) => h.tradingSymbol === symbol);
 
-  if (!quote) {
+  // Use live tick for LTP, fall back to quote
+  const ltp = liveTick?.ltp ?? quote?.ltp;
+  const change = liveTick?.change ?? quote?.change;
+  const changePercent = liveTick?.changePercent ?? quote?.changePercent;
+
+  if (!ltp && !quote) {
     return (
       <div className="flex h-64 items-center justify-center text-text-muted">
         Loading {symbol}...
@@ -42,7 +50,7 @@ export default function StockDetailPage({
     );
   }
 
-  const isPositive = quote.change >= 0;
+  const isPositive = (change ?? 0) >= 0;
 
   return (
     <div className="space-y-6">
@@ -52,14 +60,14 @@ export default function StockDetailPage({
           <p className="text-sm text-text-secondary">NSE - Equity</p>
           <div className="mt-2 flex items-baseline gap-3">
             <span className="text-3xl font-bold">
-              {formatCurrency(quote.ltp)}
+              {formatCurrency(ltp ?? 0)}
             </span>
             <span
               className={`text-lg font-medium ${isPositive ? "text-profit" : "text-loss"}`}
             >
               {isPositive ? "+" : ""}
-              {formatCurrency(quote.change)} (
-              {formatPercent(quote.changePercent)})
+              {formatCurrency(change ?? 0)} (
+              {formatPercent(changePercent ?? 0)})
             </span>
           </div>
         </div>
@@ -93,35 +101,37 @@ export default function StockDetailPage({
 
           {stockHolding && <StockHoldingCard holding={stockHolding} />}
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <InfoItem label="Open" value={formatCurrency(quote.open)} />
-            <InfoItem label="High" value={formatCurrency(quote.high)} />
-            <InfoItem label="Low" value={formatCurrency(quote.low)} />
-            <InfoItem label="Prev Close" value={formatCurrency(quote.close)} />
-            <InfoItem
-              label="Volume"
-              value={quote.volume.toLocaleString("en-IN")}
-            />
-            <InfoItem
-              label="Avg Price"
-              value={formatCurrency(quote.averagePrice)}
-            />
-            <InfoItem
-              label="Upper Circuit"
-              value={formatCurrency(quote.upperCircuit)}
-            />
-            <InfoItem
-              label="Lower Circuit"
-              value={formatCurrency(quote.lowerCircuit)}
-            />
-          </div>
+          {quote && (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <InfoItem label="Open" value={formatCurrency(liveTick?.open ?? quote.open)} />
+              <InfoItem label="High" value={formatCurrency(liveTick?.high ?? quote.high)} />
+              <InfoItem label="Low" value={formatCurrency(liveTick?.low ?? quote.low)} />
+              <InfoItem label="Prev Close" value={formatCurrency(liveTick?.close ?? quote.close)} />
+              <InfoItem
+                label="Volume"
+                value={quote.volume.toLocaleString("en-IN")}
+              />
+              <InfoItem
+                label="Avg Price"
+                value={formatCurrency(quote.averagePrice)}
+              />
+              <InfoItem
+                label="Upper Circuit"
+                value={formatCurrency(quote.upperCircuit)}
+              />
+              <InfoItem
+                label="Lower Circuit"
+                value={formatCurrency(quote.lowerCircuit)}
+              />
+            </div>
+          )}
 
-          {(quote.depth.buy.length > 0 || quote.depth.sell.length > 0) && (
+          {quote && (quote.depth.buy.length > 0 || quote.depth.sell.length > 0) && (
             <MarketDepthTable depth={quote.depth} />
           )}
         </div>
 
-        <OrderForm tradingSymbol={symbol} ltp={quote.ltp} />
+        <OrderForm tradingSymbol={symbol} ltp={ltp ?? 0} />
       </div>
     </div>
   );
