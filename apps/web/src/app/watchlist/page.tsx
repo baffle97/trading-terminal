@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { StockCard } from "~/components/stock/stock-card";
+import { StockCardSkeleton } from "~/components/skeletons/dashboard-skeleton";
 import { NIFTY_50 } from "~/lib/constants";
 import { Plus } from "lucide-react";
 import { useLivePrices } from "~/hooks/use-live-prices";
@@ -30,7 +31,7 @@ export default function WatchlistPage() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {symbols.map((symbol) => {
           const tick = livePrices[symbol];
-          if (!tick) return null;
+          if (!tick) return <StockCardSkeleton key={symbol} />;
           return (
             <StockCard
               key={symbol}

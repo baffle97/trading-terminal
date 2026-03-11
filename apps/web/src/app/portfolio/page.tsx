@@ -3,6 +3,7 @@
 import { trpc } from "~/lib/trpc";
 import { PnlSummary } from "~/components/portfolio/pnl-summary";
 import { HoldingsTable } from "~/components/portfolio/holdings-table";
+import { PortfolioSkeleton } from "~/components/skeletons/portfolio-skeleton";
 
 export default function PortfolioPage() {
   const { data: portfolio, isLoading } = trpc.portfolio.summary.useQuery(
@@ -11,21 +12,7 @@ export default function PortfolioPage() {
   );
 
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Portfolio</h1>
-        </div>
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={`skeleton-${i}`}
-              className="h-20 animate-pulse rounded-xl border border-border bg-surface-secondary"
-            />
-          ))}
-        </div>
-      </div>
-    );
+    return <PortfolioSkeleton />;
   }
 
   if (!portfolio) return null;

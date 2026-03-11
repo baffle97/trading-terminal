@@ -252,7 +252,7 @@ Enforced by Biome (config in `biome.json`):
 - [x] Stock search (Supabase full-text, Command-K)
 - [ ] Error boundaries for all routes
 - [ ] Mobile responsive sidebar
-- [ ] Loading skeletons for all pages
+- [x] Loading skeletons for all pages
 - [ ] Docker Compose for deployment
 - [ ] Token refresh cron job
 - [ ] EOD portfolio snapshot job

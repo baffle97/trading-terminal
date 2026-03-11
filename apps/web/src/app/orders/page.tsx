@@ -4,6 +4,7 @@ import { useState } from "react";
 import { trpc } from "~/lib/trpc";
 import { formatCurrency } from "~/lib/utils";
 import { OrderActionModal } from "~/components/order/order-action-modal";
+import { OrdersTableSkeleton } from "~/components/skeletons/orders-skeleton";
 import type { Order } from "~/server/groww/orders";
 
 const POLL_INTERVAL = 5000;
@@ -24,16 +25,7 @@ export default function OrdersPage() {
         </p>
       </div>
 
-      {isLoading && (
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={`skeleton-${i}`}
-              className="h-16 animate-pulse rounded-xl border border-border bg-surface-secondary"
-            />
-          ))}
-        </div>
-      )}
+      {isLoading && <OrdersTableSkeleton />}
 
       {orders && orders.length === 0 && (
         <div className="flex h-40 items-center justify-center rounded-xl border border-border bg-surface-secondary text-text-muted">

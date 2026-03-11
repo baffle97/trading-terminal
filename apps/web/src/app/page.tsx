@@ -3,6 +3,10 @@
 import { trpc } from "~/lib/trpc";
 import { StockCard } from "~/components/stock/stock-card";
 import { PnlSummary } from "~/components/portfolio/pnl-summary";
+import {
+  DashboardSkeleton,
+  StockCardSkeleton,
+} from "~/components/skeletons/dashboard-skeleton";
 import { NIFTY_50 } from "~/lib/constants";
 import { formatCurrency } from "~/lib/utils";
 import { useLivePrices } from "~/hooks/use-live-prices";
@@ -10,11 +14,18 @@ import { useLivePrices } from "~/hooks/use-live-prices";
 const TOP_STOCKS = [...NIFTY_50].slice(0, 10);
 
 export default function DashboardPage() {
-  const { data: portfolio } = trpc.portfolio.summary.useQuery(undefined, {
-    refetchInterval: 30_000,
-  });
-  const { data: margin } = trpc.portfolio.margin.useQuery();
+  const { data: portfolio, isLoading: portfolioLoading } =
+    trpc.portfolio.summary.useQuery(undefined, {
+      refetchInterval: 30_000,
+    });
+  const { data: margin, isLoading: marginLoading } =
+    trpc.portfolio.margin.useQuery();
   const livePrices = useLivePrices(TOP_STOCKS);
+  const hasLivePrices = Object.keys(livePrices).length > 0;
+
+  if (portfolioLoading && marginLoading && !hasLivePrices) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className="space-y-6">
@@ -54,7 +65,7 @@ export default function DashboardPage() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {TOP_STOCKS.map((symbol) => {
             const tick = livePrices[symbol];
-            if (!tick) return null;
+            if (!tick) return <StockCardSkeleton key={symbol} />;
             return (
               <StockCard
                 key={symbol}
