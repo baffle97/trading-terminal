@@ -9,6 +9,8 @@ import { StockHoldingCard } from "~/components/stock/stock-holding-card";
 import { formatCurrency, formatPercent } from "~/lib/utils";
 import { CHART_TIMEFRAMES } from "~/lib/constants";
 import { useLivePrice } from "~/hooks/use-live-prices";
+import { useOrderTracker } from "~/hooks/use-order-tracker";
+import { OrderStatusTracker } from "~/components/order/order-status-tracker";
 
 export default function StockDetailPage({
   params,
@@ -17,6 +19,8 @@ export default function StockDetailPage({
 }) {
   const { symbol } = use(params);
   const [timeframe, setTimeframe] = useState("1d");
+
+  const { trackedOrders, trackOrder, dismissOrder, dismissAll } = useOrderTracker();
 
   // Live price via SSE
   const liveTick = useLivePrice(symbol);
@@ -131,7 +135,18 @@ export default function StockDetailPage({
           )}
         </div>
 
-        <OrderForm tradingSymbol={symbol} ltp={ltp ?? 0} />
+        <div className="space-y-4">
+          <OrderForm
+            tradingSymbol={symbol}
+            ltp={ltp ?? 0}
+            onOrderPlaced={trackOrder}
+          />
+          <OrderStatusTracker
+            orders={trackedOrders}
+            onDismiss={dismissOrder}
+            onDismissAll={dismissAll}
+          />
+        </div>
       </div>
     </div>
   );
