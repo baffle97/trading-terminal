@@ -10,6 +10,7 @@ import { cn } from "~/lib/utils";
 interface OrderFormProps {
   tradingSymbol: string;
   ltp: number;
+  onOrderPlaced?: (orderId: string, tradingSymbol: string, transactionType: string, quantity: number) => void;
 }
 
 type OrderType = "MARKET" | "LIMIT" | "SL" | "SLM";
@@ -22,7 +23,7 @@ const ORDER_TYPES: { value: OrderType; label: string }[] = [
   { value: "SLM", label: "SL-M" },
 ];
 
-export function OrderForm({ tradingSymbol, ltp }: OrderFormProps) {
+export function OrderForm({ tradingSymbol, ltp, onOrderPlaced }: OrderFormProps) {
   const [transactionType, setTransactionType] = useState<"BUY" | "SELL">("BUY");
   const [orderType, setOrderType] = useState<OrderType>("MARKET");
   const [product, setProduct] = useState<Product>("CNC");
@@ -97,12 +98,15 @@ export function OrderForm({ tradingSymbol, ltp }: OrderFormProps) {
   // --- Place order ---
   const placeMutation = trpc.orders.place.useMutation({
     onSuccess: (data) => {
+      const qty = quantity;
+      const txnType = transactionType;
       setQuantity(1);
-      toast.success(`${transactionType} order placed for ${tradingSymbol}`, {
-        description: `Order ID: ${data.growwOrderId}`,
+      toast.success(`${txnType} order placed for ${tradingSymbol}`, {
+        description: `Order ID: ${data.growwOrderId} — tracking status...`,
       });
       utils.orders.list.invalidate();
       utils.portfolio.margin.invalidate();
+      onOrderPlaced?.(data.growwOrderId, tradingSymbol, txnType, qty);
     },
     onError: (err) => {
       toast.error("Order failed", { description: err.message });
