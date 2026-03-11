@@ -11,6 +11,7 @@ import { CHART_TIMEFRAMES } from "~/lib/constants";
 import { useLivePrice } from "~/hooks/use-live-prices";
 import { useOrderTracker } from "~/hooks/use-order-tracker";
 import { OrderStatusTracker } from "~/components/order/order-status-tracker";
+import { StockDetailSkeleton } from "~/components/skeletons/stock-detail-skeleton";
 
 export default function StockDetailPage({
   params,
@@ -47,11 +48,7 @@ export default function StockDetailPage({
   const changePercent = liveTick?.changePercent ?? quote?.changePercent;
 
   if (!ltp && !quote) {
-    return (
-      <div className="flex h-64 items-center justify-center text-text-muted">
-        Loading {symbol}...
-      </div>
-    );
+    return <StockDetailSkeleton symbol={symbol} />;
   }
 
   const isPositive = (change ?? 0) >= 0;

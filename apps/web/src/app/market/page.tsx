@@ -5,6 +5,8 @@ import { Briefcase, TrendingUp, TrendingDown, IndianRupee, BarChart3 } from "luc
 import { trpc } from "~/lib/trpc";
 import { StockCard } from "~/components/stock/stock-card";
 import { LineChart } from "~/components/charts/line-chart";
+import { MarketSkeleton } from "~/components/skeletons/market-skeleton";
+import { StockCardSkeleton } from "~/components/skeletons/dashboard-skeleton";
 import { NIFTY_50, SENSEX_30 } from "~/lib/constants";
 import { formatCurrency, formatPercent } from "~/lib/utils";
 import { cn } from "~/lib/utils";
@@ -134,10 +136,7 @@ export default function MarketPage() {
         {!hasLivePrices && (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 12 }).map((_, i) => (
-              <div
-                key={`skeleton-${i}`}
-                className="h-20 animate-pulse rounded-xl border border-border bg-surface-secondary"
-              />
+              <StockCardSkeleton key={i} />
             ))}
           </div>
         )}
