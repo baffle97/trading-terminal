@@ -95,7 +95,7 @@ Legend: ✅ Done · ⚠️ Partial · ❌ Not started
 | 4.11 | Mobile responsive layout | ✅ | Sidebar hidden on mobile, slide-in drawer with backdrop; hamburger in header; auto-close on nav; responsive padding/text |
 | 4.12 | Error boundaries (`error.tsx` pages) | ✅ | `global-error.tsx` (root), `error.tsx` (app shell, detects auth errors), `market/[symbol]/error.tsx` (stock-specific) |
 | 4.13 | Loading skeletons — portfolio/orders | ⚠️ | Market page has skeletons; portfolio/orders are basic |
-| 4.14 | EOD portfolio snapshot job | ❌ | `portfolio_snapshots` table exists; no job writes to it |
+| 4.14 | EOD portfolio snapshot job | ✅ | API route `/api/cron/eod-snapshot` + Vercel cron (3:35 PM IST weekdays) + `snapshots` tRPC router |
 | 4.15 | Notification bell (in-app) | ❌ | Bell icon in header is a dummy button |
 | 4.16 | `useMarketStore` wired to SSE LiveFeed | ✅ | Zustand store manages SSE EventSource, ref-counted subscriptions, auto-reconnect with exponential backoff |
 | 4.17 | `useWatchlistStore` connected to Supabase | ❌ | Store only tracks activeWatchlistId; no DB sync |
@@ -130,25 +130,25 @@ Ordered by user priority. All are Phase 1 items.
 | ~~P1~~ | ~~**Order status polling post-placement**~~ | ✅ Done — `useOrderTracker` + `OrderStatusTracker` with 2s poll |
 | ~~P2~~ | ~~**Error boundaries (`error.tsx`)**~~ | ✅ Done — `global-error.tsx`, `error.tsx`, `market/[symbol]/error.tsx` |
 | ~~P3~~ | ~~**Mobile responsive sidebar**~~ | ✅ Done — drawer with backdrop, hamburger toggle, auto-close on route change |
-| P4 | **Loading skeletons (portfolio, orders, stock detail)** | Better perceived performance |
+| ~~P4~~ | ~~**Loading skeletons (portfolio, orders, stock detail)**~~ | ✅ Done — skeletons for all pages |
 
 ### 🟡 Sprint B — Infrastructure & Data
 
 | Priority | Task | Why |
 |----------|------|-----|
-| P5 | **Docker Compose** | Deployment readiness |
-| P6 | **Token refresh cron job** | Eliminates manual daily login |
-| P7 | **EOD portfolio snapshot job** | Prerequisite for Phase 2 agents |
-| P8 | **Market Ticker in header** | Scrolling index prices at a glance |
-| P9 | **Notification bell (wire up Supabase)** | Bell icon is a dummy |
+| P5 | **Token refresh cron job** | Eliminates manual daily login |
+| ~~P6~~ | ~~**EOD portfolio snapshot job**~~ | ✅ Done — API route + Vercel cron + tRPC queries |
+| P7 | **Market Ticker in header** | Scrolling index prices at a glance |
+| P8 | **Notification bell (wire up Supabase)** | Bell icon is a dummy |
 
 ### 🟢 Sprint C — Nice-to-Have Polish
 
 | Priority | Task | Why |
 |----------|------|-----|
-| P10 | **Keyboard shortcuts (`/`, `B`, `S`, `Esc`)** | DX improvement |
-| P11 | **Watchlist Supabase CRUD** | Hardcoded symbols; "Add Stock" is a no-op |
-| P12 | **Positions page (intraday)** | `/v1/positions/user` endpoint available |
+| P9 | **Keyboard shortcuts (`/`, `B`, `S`, `Esc`)** | DX improvement |
+| P10 | **Watchlist Supabase CRUD** | Hardcoded symbols; "Add Stock" is a no-op |
+| P11 | **Positions page (intraday)** | `/v1/positions/user` endpoint available |
+| P12 | **Docker Compose** | Deployment readiness — defer until self-hosting needed |
 
 ---
 

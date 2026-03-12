@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/eod-snapshot",
+      "schedule": "5 10 * * 1-5"
+    }
+  ]
+}

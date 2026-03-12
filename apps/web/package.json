@@ -9,7 +9,8 @@
     "lint": "biome check ./src",
     "format": "biome check --fix ./src",
     "typecheck": "tsc --noEmit",
-    "sync:instruments": "node --experimental-strip-types --env-file=.env.local scripts/sync-instruments.ts"
+    "sync:instruments": "node --experimental-strip-types --env-file=.env.local scripts/sync-instruments.ts",
+    "snapshot:eod": "curl -s -H 'Authorization: Bearer '\"$CRON_SECRET\"'' http://localhost:3000/api/cron/eod-snapshot"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
