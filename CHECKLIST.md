@@ -137,7 +137,7 @@ Ordered by user priority. All are Phase 1 items.
 | Priority | Task | Why |
 |----------|------|-----|
 | P5 | **Token refresh cron job** | Eliminates manual daily login |
-| ~~P6~~ | ~~**EOD portfolio snapshot job**~~ | ✅ Done — API route + Vercel cron + tRPC queries |
+| P6 | **EOD portfolio snapshot job** | Prerequisite for Phase 2 agents |
 | P7 | **Market Ticker in header** | Scrolling index prices at a glance |
 | P8 | **Notification bell (wire up Supabase)** | Bell icon is a dummy |
 
